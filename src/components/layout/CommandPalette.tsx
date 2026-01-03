@@ -1,6 +1,9 @@
-import { memo, useState, useEffect, useCallback } from "react";
-import { Search, X, ArrowRight, Clock, Star, Hash, FileText, Settings, Users, BarChart } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Search, X, Command, BarChart, User, Settings, FileText, HelpCircle, Zap, ArrowRight, Clock } from "lucide-react";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { useTranslation } from "../../providers/LanguageProvider";
+import { useNavigate } from "../../platform/navigation/Router"; // Add platform navigation
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -18,46 +21,42 @@ interface Command {
 }
 
 /**
- * Command Palette - Inspired by Vercel & Linear
- * 
- * Features:
- * - Full-screen search modal
- * - Keyboard navigation
- * - Recent searches
- * - Quick actions
- * - Fuzzy search
+ * Command Palette Component
+ * Quick navigation and search across the application
  */
-export const CommandPalette = memo(({ isOpen, onClose }: CommandPaletteProps) => {
+export const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const { t } = useTranslation();
+  const navigate = useNavigate(); // Use platform navigation
 
   // Mock commands - In production, this would be dynamic
   const allCommands: Command[] = [
     {
       id: "dashboard",
-      title: "Trang chủ",
-      subtitle: "Xem tổng quan hệ thống",
+      title: t.navigation.dashboard,
+      subtitle: t.dashboard.overview,
       icon: BarChart,
       category: "Navigation",
-      action: () => window.location.href = "/",
+      action: () => { navigate("/"); onClose(); }, // Use navigate instead of window.location.href
       keywords: ["home", "dashboard", "overview"],
     },
     {
-      id: "users",
-      title: "Quản lý người dùng",
-      subtitle: "Danh sách người dùng",
-      icon: Users,
+      id: "profile",
+      title: t.navigation.profile,
+      subtitle: t.profile.personalInfo,
+      icon: User,
       category: "Navigation",
-      action: () => window.location.href = "/users",
-      keywords: ["users", "people", "accounts"],
+      action: () => { navigate("/profile"); onClose(); }, // Use navigate instead of window.location.href
+      keywords: ["profile", "user", "account"],
     },
     {
       id: "settings",
-      title: "Cài đặt",
-      subtitle: "Tùy chỉnh hệ thống",
+      title: t.navigation.settings,
+      subtitle: t.settings.general,
       icon: Settings,
       category: "Navigation",
-      action: () => window.location.href = "/settings",
+      action: () => { navigate("/settings"); onClose(); }, // Use navigate instead of window.location.href
       keywords: ["settings", "preferences", "config"],
     },
   ];
@@ -71,19 +70,25 @@ export const CommandPalette = memo(({ isOpen, onClose }: CommandPaletteProps) =>
       )
     : recentCommands;
 
-  // Keyboard navigation
+  // Handle keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
-
+    if (typeof window === 'undefined') return; // ✅ Guard for React Native compatibility
+    
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        e.preventDefault();
         onClose();
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedIndex(prev => (prev + 1) % filteredCommands.length);
+        setSelectedIndex(prev => 
+          prev < filteredCommands.length - 1 ? prev + 1 : 0
+        );
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setSelectedIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+        setSelectedIndex(prev => 
+          prev > 0 ? prev - 1 : filteredCommands.length - 1
+        );
       } else if (e.key === "Enter" && filteredCommands[selectedIndex]) {
         e.preventDefault();
         filteredCommands[selectedIndex].action();
@@ -119,7 +124,7 @@ export const CommandPalette = memo(({ isOpen, onClose }: CommandPaletteProps) =>
           {/* Search Input */}
           <div className="flex items-center gap-3 px-4 py-4 border-b border-border/40">
             <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-            <input
+            <Input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -212,6 +217,4 @@ export const CommandPalette = memo(({ isOpen, onClose }: CommandPaletteProps) =>
       </div>
     </div>
   );
-});
-
-CommandPalette.displayName = "CommandPalette";
+};

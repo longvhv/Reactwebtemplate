@@ -89,7 +89,11 @@ export class ErrorBoundary extends Component<Props, State> {
               
               <Button
                 variant="outline"
-                onClick={() => window.location.href = "/"}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.href = "/";
+                  }
+                }}
                 className="hover:scale-[1.02] active:scale-[0.98] transition-transform duration-150"
               >
                 Về trang chủ

@@ -1,5 +1,7 @@
 import { useState, useEffect, Suspense } from "react";
+import { Router } from "./platform/navigation/Router"; // ✅ Use platform abstraction instead of react-router-dom
 import { ThemeProvider } from "./providers/ThemeProvider";
+import { LanguageProvider } from "./providers/LanguageProvider";
 import { ModuleRegistry } from "./core/ModuleRegistry";
 import { AppLayout } from "./components/layout/AppLayout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -92,9 +94,13 @@ function AppContent() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <AppContent />
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </ThemeProvider>
+      </LanguageProvider>
     </ErrorBoundary>
   );
 }

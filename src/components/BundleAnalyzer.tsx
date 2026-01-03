@@ -33,6 +33,8 @@ export function BundleAnalyzer() {
   
   // Keyboard shortcut: Ctrl+Shift+B
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'B') {
         e.preventDefault();

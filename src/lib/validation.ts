@@ -58,6 +58,13 @@ export function validatePassword(password: string): {
  * Validate URL format
  */
 export function isValidURL(url: string): boolean {
+  // ✅ Guard: URL constructor not available on React Native
+  if (typeof URL === 'undefined') {
+    // Fallback: Simple regex validation
+    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
+    return urlPattern.test(url);
+  }
+  
   try {
     new URL(url);
     return true;

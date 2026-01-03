@@ -8,6 +8,15 @@ export function useIsMobile() {
   );
 
   React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // ✅ Guard: matchMedia not available on React Native
+    if (!window.matchMedia) {
+      // Fallback: Use innerWidth only
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+      return;
+    }
+    
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
     const onChange = () => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);

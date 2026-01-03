@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "../../platform/navigation/Router"; // ✅ Use platform abstraction (fixed path)
 import { 
   User, Settings, HelpCircle, LogOut, ChevronRight, 
   Crown, Shield, Mail, Bell, Palette, Keyboard, Moon, Sun, Monitor
@@ -38,6 +38,8 @@ export const UserProfileDropdown = memo(({ theme, onCycleTheme }: UserProfileDro
 
   // Click outside to close
   useEffect(() => {
+    if (typeof document === 'undefined') return; // ✅ Guard for React Native compatibility
+    
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);

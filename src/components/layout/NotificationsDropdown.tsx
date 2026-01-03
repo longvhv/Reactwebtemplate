@@ -65,8 +65,11 @@ export const NotificationsDropdown = memo(({ unreadCount = 3 }: NotificationsDro
     },
   ]);
 
-  // Click outside to close
+  // Close when clicking outside
   useEffect(() => {
+    // ✅ Guard for React Native - document is web-only
+    if (typeof document === 'undefined') return;
+    
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);

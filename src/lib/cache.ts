@@ -1,7 +1,15 @@
 /**
  * Advanced Caching System
  * In-memory and persistent caching with TTL
+ * 
+ * NOTE: localStorage persistence is web-only.
+ * In React Native, only in-memory cache will work until AsyncStorage integration.
  */
+
+/**
+ * Check if we're in a browser environment
+ */
+const isBrowser = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
 interface CacheEntry<T> {
   data: T;
@@ -25,18 +33,20 @@ class CacheManager {
 
     this.memoryCache.set(key, entry);
 
-    // Also save to localStorage for persistence
-    try {
-      localStorage.setItem(
-        `cache:${key}`,
-        JSON.stringify({
-          data,
-          timestamp: entry.timestamp,
-          ttl: entry.ttl,
-        })
-      );
-    } catch (error) {
-      console.warn('Failed to save to localStorage:', error);
+    // Also save to localStorage for persistence (web only)
+    if (isBrowser) {
+      try {
+        localStorage.setItem(
+          `cache:${key}`,
+          JSON.stringify({
+            data,
+            timestamp: entry.timestamp,
+            ttl: entry.ttl,
+          })
+        );
+      } catch (error) {
+        console.warn('Failed to save to localStorage:', error);
+      }
     }
   }
 
@@ -50,22 +60,24 @@ class CacheManager {
       return memoryEntry.data;
     }
 
-    // Try localStorage
-    try {
-      const stored = localStorage.getItem(`cache:${key}`);
-      if (stored) {
-        const entry: CacheEntry<T> = JSON.parse(stored);
-        if (this.isValid(entry)) {
-          // Restore to memory cache
-          this.memoryCache.set(key, entry);
-          return entry.data;
-        } else {
-          // Expired, remove it
-          this.remove(key);
+    // Try localStorage (web only)
+    if (isBrowser) {
+      try {
+        const stored = localStorage.getItem(`cache:${key}`);
+        if (stored) {
+          const entry: CacheEntry<T> = JSON.parse(stored);
+          if (this.isValid(entry)) {
+            // Restore to memory cache
+            this.memoryCache.set(key, entry);
+            return entry.data;
+          } else {
+            // Expired, remove it
+            this.remove(key);
+          }
         }
+      } catch (error) {
+        console.warn('Failed to read from localStorage:', error);
       }
-    } catch (error) {
-      console.warn('Failed to read from localStorage:', error);
     }
 
     return null;
@@ -84,10 +96,13 @@ class CacheManager {
    */
   remove(key: string): void {
     this.memoryCache.delete(key);
-    try {
-      localStorage.removeItem(`cache:${key}`);
-    } catch (error) {
-      console.warn('Failed to remove from localStorage:', error);
+    
+    if (isBrowser) {
+      try {
+        localStorage.removeItem(`cache:${key}`);
+      } catch (error) {
+        console.warn('Failed to remove from localStorage:', error);
+      }
     }
   }
 
@@ -97,16 +112,18 @@ class CacheManager {
   clear(): void {
     this.memoryCache.clear();
     
-    // Clear localStorage cache entries
-    try {
-      const keys = Object.keys(localStorage);
-      keys.forEach((key) => {
-        if (key.startsWith('cache:')) {
-          localStorage.removeItem(key);
-        }
-      });
-    } catch (error) {
-      console.warn('Failed to clear localStorage cache:', error);
+    // Clear localStorage cache entries (web only)
+    if (isBrowser) {
+      try {
+        const keys = Object.keys(localStorage);
+        keys.forEach((key) => {
+          if (key.startsWith('cache:')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (error) {
+        console.warn('Failed to clear localStorage cache:', error);
+      }
     }
   }
 
@@ -139,16 +156,18 @@ class CacheManager {
       }
     }
 
-    // localStorage
-    try {
-      const keys = Object.keys(localStorage);
-      keys.forEach((key) => {
-        if (key.startsWith('cache:') && pattern.test(key.substring(6))) {
-          localStorage.removeItem(key);
-        }
-      });
-    } catch (error) {
-      console.warn('Failed to invalidate localStorage cache:', error);
+    // localStorage (web only)
+    if (isBrowser) {
+      try {
+        const keys = Object.keys(localStorage);
+        keys.forEach((key) => {
+          if (key.startsWith('cache:') && pattern.test(key.substring(6))) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (error) {
+        console.warn('Failed to invalidate localStorage cache:', error);
+      }
     }
   }
 
@@ -159,11 +178,13 @@ class CacheManager {
     const memorySize = this.memoryCache.size;
     let localStorageSize = 0;
 
-    try {
-      const keys = Object.keys(localStorage);
-      localStorageSize = keys.filter((key) => key.startsWith('cache:')).length;
-    } catch (error) {
-      // Ignore
+    if (isBrowser) {
+      try {
+        const keys = Object.keys(localStorage);
+        localStorageSize = keys.filter((key) => key.startsWith('cache:')).length;
+      } catch (error) {
+        // Ignore
+      }
     }
 
     return {

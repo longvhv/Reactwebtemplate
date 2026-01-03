@@ -103,6 +103,12 @@ export function LazyBackgroundImage({
 
   useEffect(() => {
     if (lazySrc) {
+      // ✅ Guard for React Native - Image constructor is web-only
+      if (typeof window === 'undefined' || typeof Image === 'undefined') {
+        setIsLoaded(true); // Assume loaded in non-browser environments
+        return;
+      }
+      
       const img = new Image();
       img.src = lazySrc;
       img.onload = () => setIsLoaded(true);

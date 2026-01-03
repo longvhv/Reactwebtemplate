@@ -177,19 +177,24 @@ export function getBundleStrategy(): 'eager' | 'lazy' | 'prefetch' {
 /**
  * Dynamic import with performance tracking
  */
-export async function dynamicImportWithTracking<T>(
+export async function trackModuleLoadTime<T>(
   importFunc: () => Promise<T>,
   moduleName: string
 ): Promise<T> {
-  const startTime = performance.now();
+  // ✅ Guard for React Native - performance.now() fallback to Date.now()
+  const getNow = () => typeof performance !== 'undefined' && performance.now 
+    ? performance.now() 
+    : Date.now();
+  
+  const startTime = getNow();
 
   try {
     const module = await importFunc();
-    const loadTime = performance.now() - startTime;
+    const loadTime = getNow() - startTime;
     reportChunkLoadTime(moduleName, loadTime);
     return module;
   } catch (error) {
-    const loadTime = performance.now() - startTime;
+    const loadTime = getNow() - startTime;
     console.error(`Failed to load ${moduleName} after ${loadTime.toFixed(2)}ms:`, error);
     throw error;
   }

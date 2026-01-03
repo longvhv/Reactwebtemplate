@@ -1,12 +1,9 @@
 
-  import { defineConfig, loadEnv } from 'vite';
+  import { defineConfig } from 'vite';
   import react from '@vitejs/plugin-react-swc';
   import path from 'path';
 
-  export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, process.cwd(), '');
-    
-    return {
+  export default defineConfig({
     plugins: [react()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
@@ -40,7 +37,6 @@
         '@radix-ui/react-menubar@1.1.6': '@radix-ui/react-menubar',
         '@radix-ui/react-label@2.1.2': '@radix-ui/react-label',
         '@radix-ui/react-hover-card@1.1.6': '@radix-ui/react-hover-card',
-        '@radix-ui/react-dropdown-menu@2.1.6': '@radix-ui/react-dropdown-menu',
         '@radix-ui/react-dialog@1.1.6': '@radix-ui/react-dialog',
         '@radix-ui/react-context-menu@2.2.6': '@radix-ui/react-context-menu',
         '@radix-ui/react-collapsible@1.1.3': '@radix-ui/react-collapsible',
@@ -59,15 +55,5 @@
     server: {
       port: 3000,
       open: true,
-      proxy: {
-        '/api': {
-          target: env.VITE_API_GATEWAY_URL || 'http://localhost:8000',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ''),
-        },
-      },
     },
-    // Environment variables prefix
-    envPrefix: 'VITE_',
-  };
   });

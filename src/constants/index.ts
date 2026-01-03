@@ -1,7 +1,9 @@
 /**
- * Centralized exports for constants
- * Import everything you need from here
+ * Constants Index
+ * Export all constants
  */
 
 export * from './app';
 export * from './navigation';
+export * from './profile';
+export * from './languages';

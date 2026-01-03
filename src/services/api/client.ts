@@ -3,6 +3,8 @@
  * Centralized API communication layer
  */
 
+import { platformFetch } from '../../platform/network/fetch';
+
 interface RequestConfig extends RequestInit {
   params?: Record<string, string>;
   timeout?: number;
@@ -29,7 +31,35 @@ class ApiClient {
    * Build URL with query parameters
    */
   private buildURL(endpoint: string, params?: Record<string, string>): string {
-    const url = new URL(endpoint, window.location.origin + this.baseURL);
+    // ✅ Guard: URL constructor not available on React Native
+    if (typeof URL === 'undefined') {
+      // Fallback: Manual URL building
+      let url = endpoint.startsWith('http') ? endpoint : this.baseURL + endpoint;
+      if (params && Object.keys(params).length > 0) {
+        const queryString = Object.entries(params)
+          .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+          .join('&');
+        url += (url.includes('?') ? '&' : '?') + queryString;
+      }
+      return url;
+    }
+    
+    // Handle absolute URLs
+    if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+      const url = new URL(endpoint);
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          url.searchParams.append(key, value);
+        });
+      }
+      return url.toString();
+    }
+    
+    // Handle relative URLs
+    const baseUrl = typeof window !== 'undefined' 
+      ? window.location.origin + this.baseURL
+      : this.baseURL;
+    const url = new URL(endpoint, baseUrl);
     
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -55,7 +85,7 @@ class ApiClient {
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-      const response = await fetch(url, {
+      const response = await platformFetch(url, {
         ...fetchConfig,
         headers: {
           ...this.defaultHeaders,

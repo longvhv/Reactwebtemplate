@@ -1,5 +1,5 @@
 import { memo, useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "../../platform/navigation/Router"; // ✅ Use platform abstraction (fixed path)
 
 /**
  * Loading Progress Bar - Inspired by YouTube & GitHub

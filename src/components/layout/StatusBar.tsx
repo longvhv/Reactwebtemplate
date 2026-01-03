@@ -13,12 +13,16 @@ import { Wifi, WifiOff, Activity, AlertTriangle, CheckCircle2, Clock } from "luc
  * - Smooth animations
  */
 export const StatusBar = memo(() => {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState(() => 
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
   const [lastSync, setLastSync] = useState<Date>(new Date());
   const [deployStatus, setDeployStatus] = useState<"idle" | "deploying" | "success" | "error">("idle");
 
   // Monitor online status
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 

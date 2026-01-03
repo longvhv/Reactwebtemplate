@@ -27,6 +27,9 @@ interface ThemeProviderProps {
  */
 export function ThemeProvider({ children, defaultTheme = "system" }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return defaultTheme;
+    }
     const stored = localStorage.getItem("vhv-theme") as Theme;
     return stored || defaultTheme;
   });
@@ -35,15 +38,18 @@ export function ThemeProvider({ children, defaultTheme = "system" }: ThemeProvid
 
   // Áp dụng theme
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
 
     let applied: "light" | "dark" = "light";
 
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
+      // ✅ Guard: matchMedia not available on React Native
+      const systemTheme = (typeof window !== 'undefined' && window.matchMedia)
+        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        : "light"; // Default to light on React Native
       applied = systemTheme;
     } else {
       applied = theme;
@@ -55,7 +61,11 @@ export function ThemeProvider({ children, defaultTheme = "system" }: ThemeProvid
 
   // Lắng nghe thay đổi system preference
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
     if (theme !== "system") return;
+
+    // ✅ Guard: matchMedia not available on React Native
+    if (!window.matchMedia) return;
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
@@ -72,6 +82,7 @@ export function ThemeProvider({ children, defaultTheme = "system" }: ThemeProvid
 
   // Lưu theme vào localStorage
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
     localStorage.setItem("vhv-theme", theme);
   }, [theme]);
 

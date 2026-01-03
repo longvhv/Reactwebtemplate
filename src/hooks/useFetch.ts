@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { requestCache, globalCache } from "../utils/cache";
+import { platformFetch } from "../platform/network/fetch";
 
 interface UseFetchOptions {
   cache?: boolean;
@@ -60,7 +61,7 @@ export function useFetch<T = any>(
 
       try {
         const fetchFn = async () => {
-          const response = await fetch(url);
+          const response = await platformFetch(url);
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }

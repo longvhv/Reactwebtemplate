@@ -32,6 +32,13 @@ export function useInfiniteScroll({
   useEffect(() => {
     const target = observerTarget.current;
     if (!target) return;
+    
+    // ✅ Guard for React Native - IntersectionObserver is web-only
+    if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
+      // Fallback: assume always intersecting in non-browser environments
+      setIsIntersecting(true);
+      return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {

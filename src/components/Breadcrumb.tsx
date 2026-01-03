@@ -1,5 +1,5 @@
 import { ChevronRight, Home } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "./platform/navigation/Router"; // ✅ Use platform abstraction
 
 interface BreadcrumbItem {
   label: string;

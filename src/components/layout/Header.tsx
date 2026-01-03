@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X, Sparkles, Search, Command, Clock, ArrowRight, BarChart, Settings, ChevronDown } from "lucide-react";
 import { Button } from "../ui/button";
 import { CommandPalette } from "./CommandPalette";
@@ -7,6 +7,7 @@ import { NotificationsDropdown } from "./NotificationsDropdown";
 import { QuickActionsDropdown } from "./QuickActionsDropdown";
 import { UserProfileDropdown } from "./UserProfileDropdown";
 import { LoadingBar } from "./LoadingBar";
+import { LanguageSwitcher } from "../common/LanguageSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,7 @@ import type { HeaderProps, LanguageCode } from "../../types";
 import { LANGUAGES, MOCK_RECENT_SEARCHES } from "../../constants/navigation";
 import { APP_CONFIG, LAYOUT_CONFIG } from "../../constants/app";
 import { useKeyboardShortcut } from "../../hooks/useKeyboardShortcut";
+import { useTranslation } from "../../providers/LanguageProvider";
 
 /**
  * Enterprise Header Component - V2.0
@@ -36,7 +38,7 @@ import { useKeyboardShortcut } from "../../hooks/useKeyboardShortcut";
  * - User profile dropdown
  * - Responsive design
  */
-export const Header = memo(({ 
+export const Header = ({ 
   sidebarOpen, 
   onToggleSidebar, 
   theme, 
@@ -46,11 +48,13 @@ export const Header = memo(({
   sidebarCollapsed
 }: HeaderProps) => {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const [language, setLanguage] = useState<LanguageCode>("vi");
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { t } = useTranslation();
 
-  const currentLanguage = LANGUAGES.find(lang => lang.code === language);
+  // Debug log
+  console.log('🔍 Header - t.navigation.dashboard:', t.navigation.dashboard);
+
   const recentSearches = MOCK_RECENT_SEARCHES;
 
   // Keyboard shortcut for search
@@ -60,8 +64,11 @@ export const Header = memo(({
     callback: () => setCommandPaletteOpen(true),
   });
 
-  // Close search dropdown when clicking outside
+  // Click outside to close search suggestions
   useEffect(() => {
+    // ✅ Guard for React Native - document is web-only
+    if (typeof document === 'undefined') return;
+    
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest('.search-container')) {
@@ -170,39 +177,8 @@ export const Header = memo(({
               <Search className="w-5 h-5" />
             </Button>
 
-            {/* Language Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="hidden md:flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all duration-150 group"
-                  aria-label="Change language"
-                >
-                  <span className="text-base group-hover:scale-110 transition-transform duration-200">
-                    {currentLanguage?.flag}
-                  </span>
-                  <ChevronDown className="w-3 h-3 text-muted-foreground group-hover:text-foreground transition-colors duration-200" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
-                {LANGUAGES.map((lang) => (
-                  <DropdownMenuItem
-                    key={lang.code}
-                    onClick={() => setLanguage(lang.code as LanguageCode)}
-                    className={`flex items-center gap-3 cursor-pointer ${
-                      language === lang.code ? "bg-primary/10 text-primary" : ""
-                    }`}
-                  >
-                    <span className="text-base">{lang.flag}</span>
-                    <span className="flex-1">{lang.name}</span>
-                    {language === lang.code && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    )}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Language Switcher */}
+            <LanguageSwitcher />
 
             {/* Notifications */}
             <NotificationsDropdown />
@@ -228,6 +204,4 @@ export const Header = memo(({
       />
     </>
   );
-});
-
-Header.displayName = "Header";
+};

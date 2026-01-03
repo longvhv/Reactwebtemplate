@@ -52,14 +52,19 @@ export async function measureTime<T>(
   fn: () => T | Promise<T>,
   label: string
 ): Promise<T> {
-  const start = performance.now();
+  // ✅ Guard for React Native - performance.now() fallback to Date.now()
+  const getNow = () => typeof performance !== 'undefined' && performance.now 
+    ? performance.now() 
+    : Date.now();
+  
+  const start = getNow();
   try {
     const result = await fn();
-    const end = performance.now();
+    const end = getNow();
     console.log(`[Performance] ${label}: ${(end - start).toFixed(2)}ms`);
     return result;
   } catch (error) {
-    const end = performance.now();
+    const end = getNow();
     console.error(`[Performance] ${label} failed after ${(end - start).toFixed(2)}ms`);
     throw error;
   }
@@ -129,7 +134,7 @@ export const isBrowser = typeof window !== 'undefined';
  * Check if device is mobile
  */
 export function isMobileDevice(): boolean {
-  if (!isBrowser) return false;
+  if (!isBrowser || typeof navigator === 'undefined') return false;
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
   );
@@ -200,8 +205,11 @@ export function batchUpdates<T>(updates: (() => void)[]): void {
 
 /**
  * Check if element is in viewport
+ * Web-only utility
  */
 export function isInViewport(element: Element): boolean {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return false; // ✅ Guard for React Native
+  
   const rect = element.getBoundingClientRect();
   return (
     rect.top >= 0 &&

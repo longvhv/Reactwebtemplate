@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "../../platform/navigation/Router"; // ✅ Use platform abstraction
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -25,7 +25,9 @@ export function LoginPage() {
     setTimeout(() => {
       setLoading(false);
       // Mock login success
-      localStorage.setItem("vhv-auth-token", "mock-token-123");
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem("vhv-auth-token", "mock-token-123");
+      }
       navigate("/");
     }, 1000);
   };

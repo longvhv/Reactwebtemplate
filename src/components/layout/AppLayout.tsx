@@ -1,24 +1,29 @@
-import { useState, useMemo, memo, useEffect } from "react";
-import { BrowserRouter, Routes, Route, useLocation, NavLink } from "react-router-dom";
-import { ModuleRegistry } from "../../core/ModuleRegistry";
-import { useTheme } from "../../providers/ThemeProvider";
-import {
-  Sparkles,
-  ChevronLeft,
-  ChevronRight,
+import { useState, useEffect, useMemo, memo } from "react";
+import { Routes, Route, NavLink, useLocation } from "../../platform/navigation/Router"; // ✅ Use platform abstraction (fixed path)
+import { 
+  LayoutDashboard, 
+  Users, 
+  Settings, 
+  HelpCircle, 
+  Sparkles, 
+  ChevronLeft, 
+  ChevronRight, 
   Search,
   Pin,
-  Layers,
-  BarChart3,
-  Zap,
+  Clock,
   Star,
+  TrendingUp
 } from "lucide-react";
+import { ModuleRegistry } from "../../core/ModuleRegistry";
+import { useTheme } from "../../providers/ThemeProvider";
+import { useTranslation } from "../../providers/LanguageProvider";
 import { Button } from "../ui/button";
 import { Header } from "./Header";
 import { Input } from "../ui/input";
 import { Tooltip } from "../ui/Tooltip";
 import { NestedMenuItem } from "./NestedMenuItem";
 import { MenuBreadcrumb } from "./MenuBreadcrumb";
+import { LanguageTest } from "../LanguageTest";
 
 // Memoized Navigation Item with enhanced states
 const NavigationItem = memo(({ route, icon, name, onClose, isPinned, onTogglePin }: {
@@ -112,6 +117,8 @@ export function AppLayout() {
   const [recentRoutes, setRecentRoutes] = useState<string[]>([]);
 
   const { theme, setTheme, actualTheme } = useTheme();
+  const { t } = useTranslation();
+  const location = useLocation(); // Add this line to get location from hook
   const registry = ModuleRegistry.getInstance();
   
   // Memoize modules and routes
@@ -158,16 +165,16 @@ export function AppLayout() {
 
   // Track recent routes
   useEffect(() => {
-    const currentPath = window.location.pathname;
+    const currentPath = location.pathname; // Use location from useLocation hook instead of window.location
     if (currentPath && currentPath !== "/" && !recentRoutes.includes(currentPath)) {
       setRecentRoutes(prev => [currentPath, ...prev.slice(0, 4)]);
     }
-  }, []);
+  }, [location.pathname, recentRoutes]); // Add dependencies
 
   const sidebarWidth = sidebarCollapsed ? "w-20" : "w-64";
 
   return (
-    <BrowserRouter>
+    <>
       {/* Ambient gradient background */}
       <div className="ambient-gradient" />
       
@@ -334,13 +341,13 @@ export function AppLayout() {
                       <span className="text-4xl">404</span>
                     </div>
                     <h2 className="text-2xl font-semibold mb-2">
-                      Không tìm thấy trang
+                      {t.errors.notFound}
                     </h2>
                     <p className="text-muted-foreground mb-8">
-                      Trang bạn đang tìm kiếm không tồn tại.
+                      {t.errors.somethingWentWrong}
                     </p>
                     <Button asChild>
-                      <a href="/">Về trang chủ</a>
+                      <a href="/">{t.common.back}</a>
                     </Button>
                   </div>
                 }
@@ -348,7 +355,10 @@ export function AppLayout() {
             </Routes>
           </div>
         </main>
+
+        {/* Language Test Component */}
+        <LanguageTest />
       </div>
-    </BrowserRouter>
+    </>
   );
 }

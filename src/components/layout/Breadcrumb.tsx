@@ -1,6 +1,6 @@
-import { memo } from "react";
-import { ChevronRight, Home } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation, Link } from "../../platform/navigation/Router"; // ✅ Use platform abstraction (fixed path)
+import { Home, ChevronRight } from "lucide-react";
+import { useTranslation } from "../../providers/LanguageProvider";
 
 /**
  * Breadcrumb Navigation - Inspired by GitHub
@@ -11,7 +11,7 @@ import { Link, useLocation } from "react-router-dom";
  * - Home icon
  * - Smooth animations
  */
-export const Breadcrumb = memo(() => {
+export const Breadcrumb = () => {
   const location = useLocation();
   const pathnames = location.pathname.split("/").filter(x => x);
 
@@ -26,6 +26,8 @@ export const Breadcrumb = memo(() => {
       .join(" ");
   };
 
+  const { t } = useTranslation();
+
   return (
     <nav className="flex items-center gap-2 text-sm animate-in slide-in-from-left-2 duration-300">
       <Link
@@ -33,7 +35,7 @@ export const Breadcrumb = memo(() => {
         className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors duration-150 group"
       >
         <Home className="w-4 h-4 group-hover:scale-110 transition-transform duration-150" />
-        <span className="hidden sm:inline">Trang chủ</span>
+        <span className="hidden sm:inline">{t.navigation.dashboard}</span>
       </Link>
 
       {pathnames.map((segment, index) => {
@@ -60,6 +62,6 @@ export const Breadcrumb = memo(() => {
       })}
     </nav>
   );
-});
+};
 
 Breadcrumb.displayName = "Breadcrumb";

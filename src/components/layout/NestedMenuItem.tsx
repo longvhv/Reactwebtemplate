@@ -1,5 +1,5 @@
 import { useState, memo, useEffect } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "../../platform/navigation/Router"; // ✅ Use platform abstraction (fixed path)
 import { ChevronRight, ChevronDown, Circle } from "lucide-react";
 import { MenuItem } from "../../core/ModuleRegistry";
 import { Tooltip } from "../ui/Tooltip";
@@ -45,6 +45,7 @@ export const NestedMenuItem = memo(({ item, level, collapsed, onClose, searchQue
   const storageKey = `menu-expanded-${item.id}`;
   const getInitialExpanded = () => {
     if (hasActiveChild) return true; // Auto-expand if contains active route
+    if (typeof localStorage === 'undefined') return false;
     const stored = localStorage.getItem(storageKey);
     return stored ? JSON.parse(stored) : false;
   };
@@ -53,6 +54,7 @@ export const NestedMenuItem = memo(({ item, level, collapsed, onClose, searchQue
 
   // Save expand state to localStorage
   useEffect(() => {
+    if (typeof localStorage === 'undefined') return;
     if (hasChildren) {
       localStorage.setItem(storageKey, JSON.stringify(isExpanded));
     }

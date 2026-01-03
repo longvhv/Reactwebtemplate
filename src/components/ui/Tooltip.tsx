@@ -41,6 +41,9 @@ export const Tooltip = memo(({ content, children, side = "top", delay = 200, dis
 
   const calculatePosition = () => {
     if (!triggerRef.current) return;
+    
+    // ✅ Guard for React Native - getBoundingClientRect is web-only
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
     const rect = triggerRef.current.getBoundingClientRect();
     const tooltipWidth = 200; // Estimated
