@@ -1,19 +1,22 @@
-import { useState, useEffect, Suspense } from "react";
-import { Router } from "./platform/navigation/Router"; // ✅ Use platform abstraction instead of react-router-dom
+import { useEffect, memo, lazy, Suspense } from "react";
+import { Router } from "./platform/navigation/Router";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { LanguageProvider } from "./providers/LanguageProvider";
 import { ModuleRegistry } from "./core/ModuleRegistry";
 import { AppLayout } from "./components/layout/AppLayout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { LoadingFallback } from "./components/LoadingFallback";
-import { PerformanceMonitor } from "./components/PerformanceMonitor";
-import { BundleAnalyzer } from "./components/BundleAnalyzer";
 import { preloadCriticalResources, setupIntelligentPrefetch } from "./utils/preload";
 import { initPerformanceMonitoring } from "./utils/performanceMonitoring";
+import { logger } from "./utils/logger";
 import { DashboardModule } from "./modules/dashboard";
 import { AuthModule } from "./modules/auth";
 import { SettingsModule } from "./modules/settings";
 import { UserModule } from "./modules/user";
+
+// Lazy load dev-only component for better performance
+const PerformanceMonitor = lazy(() => 
+  import("./components/PerformanceMonitor").then(m => ({ default: m.PerformanceMonitor }))
+);
 
 /**
  * Register modules immediately (before render)
@@ -32,7 +35,7 @@ if (typeof performance !== "undefined") {
 }
 
 // Register modules synchronously
-console.log("Registering modules...");
+logger.log("Registering modules...");
 registry.register(DashboardModule);
 registry.register(AuthModule);
 registry.register(SettingsModule);
@@ -51,7 +54,7 @@ if (typeof performance !== "undefined") {
   }
 }
 
-console.log(`✅ Registered ${registry.getAllModules().length} modules`);
+logger.success(`Registered ${registry.getAllModules().length} modules`);
 
 /**
  * VHV Platform React Framework
@@ -66,7 +69,7 @@ console.log(`✅ Registered ${registry.getAllModules().length} modules`);
  * - Intelligent prefetching
  * - Real-time performance monitoring
  */
-function AppContent() {
+const AppContent = memo(function AppContent() {
   useEffect(() => {
     // Initialize performance monitoring
     initPerformanceMonitoring();
@@ -83,13 +86,15 @@ function AppContent() {
   return (
     <>
       <AppLayout />
-      {/* Performance Monitor - Development only */}
-      {process.env.NODE_ENV === "development" && <PerformanceMonitor />}
-      {/* Bundle Analyzer - Development only */}
-      {process.env.NODE_ENV === "development" && <BundleAnalyzer />}
+      {/* Performance Monitor - Development only with lazy loading */}
+      {process.env.NODE_ENV === "development" && (
+        <Suspense fallback={null}>
+          <PerformanceMonitor />
+        </Suspense>
+      )}
     </>
   );
-}
+});
 
 export default function App() {
   return (

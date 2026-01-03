@@ -1,6 +1,6 @@
 
   {
-      "name": "Ứng dụng cơ bản",
+      "name": "PMQL cơ bản",
       "version": "0.1.0",
       "private": true,
       "dependencies": {

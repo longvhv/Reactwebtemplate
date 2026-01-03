@@ -52,9 +52,6 @@ export const Header = ({
   const [searchQuery, setSearchQuery] = useState("");
   const { t } = useTranslation();
 
-  // Debug log
-  console.log('🔍 Header - t.navigation.dashboard:', t.navigation.dashboard);
-
   const recentSearches = MOCK_RECENT_SEARCHES;
 
   // Keyboard shortcut for search

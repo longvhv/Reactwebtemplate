@@ -10,6 +10,7 @@ import {
   DEFAULT_LANGUAGE, 
   LANGUAGE_STORAGE_KEY 
 } from '../constants/languages';
+import { logger } from '../utils/logger';
 
 interface LanguageContextType {
   language: LanguageCode;
@@ -54,7 +55,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   });
 
   const setLanguage = (lang: LanguageCode) => {
-    console.log('🌍 Setting language to:', lang);
+    logger.i18n('Setting language to:', lang);
     setLanguageState(lang);
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
@@ -64,7 +65,6 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     if (typeof document !== 'undefined') {
       document.documentElement.lang = lang;
     }
-    console.log('✅ Language updated to:', lang);
   };
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     const translation = getNestedProperty(translations[language], key);
     
     if (translation === undefined) {
-      console.warn(`Translation not found for key: ${key} in language: ${language}`);
+      logger.warn(`Translation not found for key: ${key} in language: ${language}`);
       return key;
     }
 

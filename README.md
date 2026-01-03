@@ -1,7 +1,7 @@
 
-  # Ứng dụng cơ bản
+  # PMQL cơ bản
 
-  This is a code bundle for Ứng dụng cơ bản. The original project is available at https://www.figma.com/design/LQfSKRtvCJ8LIb5Nugeobb/%E1%BB%A8ng-d%E1%BB%A5ng-c%C6%A1-b%E1%BA%A3n.
+  This is a code bundle for PMQL cơ bản. The original project is available at https://www.figma.com/design/LQfSKRtvCJ8LIb5Nugeobb/PMQL-c%C6%A1-b%E1%BA%A3n.
 
   ## Running the code
 

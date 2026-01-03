@@ -355,9 +355,6 @@ export function AppLayout() {
             </Routes>
           </div>
         </main>
-
-        {/* Language Test Component */}
-        <LanguageTest />
       </div>
     </>
   );
