@@ -5,24 +5,30 @@ import (
 	"errors"
 	"time"
 
+	"github.com/vhvplatform/go-shared/mongodb"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var (
+	// ErrUserAlreadyExists is returned when a user already exists
+	ErrUserAlreadyExists = errors.New("user already exists")
+)
+
 // Repository handles database operations for authentication
 type Repository struct {
 	db       *mongo.Database
-	users    *mongo.Collection
-	sessions *mongo.Collection
+	users    *mongodb.Repository
+	sessions *mongodb.Repository
 }
 
 // NewRepository creates a new auth repository
 func NewRepository(db *mongo.Database) *Repository {
 	return &Repository{
 		db:       db,
-		users:    db.Collection("user_accounts"),
-		sessions: db.Collection("auth_sessions"),
+		users:    mongodb.NewRepository(db, "user_accounts"),
+		sessions: mongodb.NewRepository(db, "auth_sessions"),
 	}
 }
 
@@ -33,13 +39,19 @@ func (r *Repository) CreateUser(ctx context.Context, user *User) error {
 	user.UpdatedAt = time.Now()
 
 	_, err := r.users.InsertOne(ctx, user)
-	return err
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return ErrUserAlreadyExists
+		}
+		return err
+	}
+	return nil
 }
 
 // FindUserByEmail finds a user by email address
 func (r *Repository) FindUserByEmail(ctx context.Context, email string) (*User, error) {
 	var user User
-	err := r.users.FindOne(ctx, bson.M{"emailAddress": email}).Decode(&user)
+	err := r.users.FindOne(ctx, bson.M{"emailAddress": email}, &user)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, nil
@@ -52,7 +64,7 @@ func (r *Repository) FindUserByEmail(ctx context.Context, email string) (*User, 
 // FindUserByID finds a user by user ID
 func (r *Repository) FindUserByID(ctx context.Context, userID string) (*User, error) {
 	var user User
-	err := r.users.FindOne(ctx, bson.M{"userId": userID}).Decode(&user)
+	err := r.users.FindOne(ctx, bson.M{"userId": userID}, &user)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, nil
@@ -86,10 +98,13 @@ func (r *Repository) CreateSession(ctx context.Context, session *Session) error 
 // FindSessionByRefreshToken finds a session by refresh token
 func (r *Repository) FindSessionByRefreshToken(ctx context.Context, refreshToken string) (*Session, error) {
 	var session Session
-	err := r.sessions.FindOne(ctx, bson.M{
+	
+	filter := bson.M{
 		"refreshToken": refreshToken,
 		"expiresAt":    bson.M{"$gt": time.Now()},
-	}).Decode(&session)
+	}
+	
+	err := r.sessions.FindOne(ctx, filter, &session)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, nil
@@ -113,8 +128,23 @@ func (r *Repository) DeleteUserSessions(ctx context.Context, userID string) erro
 
 // CleanExpiredSessions removes expired sessions
 func (r *Repository) CleanExpiredSessions(ctx context.Context) error {
-	_, err := r.sessions.DeleteMany(ctx, bson.M{
+	filter := bson.M{
 		"expiresAt": bson.M{"$lt": time.Now()},
-	})
+	}
+	_, err := r.sessions.DeleteMany(ctx, filter)
 	return err
+}
+
+// UserExists checks if a user exists by email
+func (r *Repository) UserExists(ctx context.Context, email string) (bool, error) {
+	count, err := r.users.Count(ctx, bson.M{"emailAddress": email})
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// CountUsers returns the total number of users
+func (r *Repository) CountUsers(ctx context.Context, filter bson.M) (int64, error) {
+	return r.users.Count(ctx, filter)
 }

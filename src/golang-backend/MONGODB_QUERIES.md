@@ -5,12 +5,10 @@ Tài liệu hướng dẫn sử dụng MongoDB queries với `github.com/vhvplat
 ## 📚 Table of Contents
 
 1. [Basic CRUD Operations](#basic-crud-operations)
-2. [Query Builder](#query-builder)
-3. [Search & Filter](#search--filter)
-4. [Pagination](#pagination)
-5. [Aggregation](#aggregation)
-6. [Transactions](#transactions)
-7. [Advanced Queries](#advanced-queries)
+2. [Advanced Queries](#advanced-queries)
+3. [Pagination](#pagination)
+4. [Aggregation](#aggregation)
+5. [Repository Pattern](#repository-pattern)
 
 ---
 
@@ -19,10 +17,10 @@ Tài liệu hướng dẫn sử dụng MongoDB queries với `github.com/vhvplat
 ### Create (Insert)
 
 ```go
-import "github.com/vhvplatform/react-framework-api/pkg/database"
+import "github.com/vhvplatform/go-shared/mongodb"
 
 // Create repository
-userRepo := database.NewBaseRepository(db, "user_accounts")
+userRepo := mongodb.NewRepository(db, "user_accounts")
 
 // Insert one document
 user := &User{
@@ -35,7 +33,7 @@ user := &User{
 
 result, err := userRepo.InsertOne(ctx, user)
 if err != nil {
-    if err == database.ErrDuplicateKey {
+    if mongo.IsDuplicateKeyError(err) {
         return errors.New("user already exists")
     }
     return err
@@ -45,19 +43,15 @@ if err != nil {
 ### Read (Find)
 
 ```go
-// Find one by specific field
+// Find one by filter
 var user User
-err := userRepo.FindByField(ctx, "emailAddress", "john@example.com", &user)
+err := userRepo.FindOne(ctx, bson.M{"emailAddress": "john@example.com"}, &user)
 if err != nil {
-    if err == database.ErrNotFound {
+    if errors.Is(err, mongo.ErrNoDocuments) {
         return errors.New("user not found")
     }
     return err
 }
-
-// Find by ObjectID
-objectID, _ := primitive.ObjectIDFromHex("507f1f77bcf86cd799439011")
-err := userRepo.FindByID(ctx, objectID, &user)
 
 // Find multiple
 filter := bson.M{"status": "active"}
@@ -68,37 +62,36 @@ err := userRepo.Find(ctx, filter, &users)
 ### Update
 
 ```go
-// Update by field
+// Update one
 update := bson.M{
     "firstName": "John Updated",
     "lastName": "Doe Updated",
+    "updatedAt": time.Now(),
 }
 
-_, err := userRepo.UpdateByField(
+_, err := userRepo.UpdateOne(
     ctx,
-    "userId",
-    "usr_123",
+    bson.M{"userId": "usr_123"},
     bson.M{"$set": update},
 )
 
 // Find and update (returns updated document)
 var updatedUser User
-err := userRepo.FindOneAndUpdate(
+opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+
+err := userRepo.Collection().FindOneAndUpdate(
     ctx,
     bson.M{"userId": "usr_123"},
     bson.M{"$set": update},
-    &updatedUser,
-)
+    opts,
+).Decode(&updatedUser)
 ```
 
 ### Delete
 
 ```go
-// Delete by field
-_, err := userRepo.DeleteByField(ctx, "userId", "usr_123")
-
-// Delete by ObjectID
-_, err := userRepo.DeleteByID(ctx, objectID)
+// Delete one
+_, err := userRepo.DeleteOne(ctx, bson.M{"userId": "usr_123"})
 
 // Delete many
 filter := bson.M{"status": "inactive"}
@@ -107,90 +100,23 @@ _, err := userRepo.DeleteMany(ctx, filter)
 
 ---
 
-## 2. Query Builder
-
-### Basic Query
-
-```go
-// Build query với fluent interface
-qb := database.NewQueryBuilder().
-    Filter("status", "active").
-    Filter("role", "admin").
-    Sort("createdAt", false).  // false = descending
-    Skip(10).
-    Limit(20)
-
-filter, opts := qb.Build()
-
-var users []User
-err := userRepo.Find(ctx, *filter, &users, opts)
-```
-
-### Multiple Filters
-
-```go
-qb := database.NewQueryBuilder().
-    Filter("status", "active").
-    Filter("role", "user").
-    FilterRange("age", 18, 65).
-    Sort("firstName", true).  // true = ascending
-    Limit(100)
-
-filter, opts := qb.Build()
-```
-
-### Regex Search
-
-```go
-qb := database.NewQueryBuilder().
-    FilterRegex("emailAddress", "gmail.com", true)  // case insensitive
-
-filter, opts := qb.Build()
-```
-
-### IN Query
-
-```go
-roles := []interface{}{"admin", "moderator", "user"}
-
-qb := database.NewQueryBuilder().
-    FilterIn("role", roles).
-    Sort("createdAt", false)
-
-filter, opts := qb.Build()
-```
-
-### Projection (Select Fields)
-
-```go
-qb := database.NewQueryBuilder().
-    Filter("status", "active").
-    Project(map[string]int{
-        "firstName": 1,
-        "lastName": 1,
-        "emailAddress": 1,
-        "password": 0,  // exclude password
-    })
-
-filter, opts := qb.Build()
-```
-
----
-
-## 3. Search & Filter
+## 2. Advanced Queries
 
 ### Text Search Across Multiple Fields
 
 ```go
-import "github.com/vhvplatform/react-framework-api/pkg/database"
-
+// Search filter
 searchTerm := "john"
-filter := database.SearchFilter(searchTerm, "firstName", "lastName", "emailAddress")
+filter := bson.M{
+    "$or": []bson.M{
+        {"firstName": bson.M{"$regex": searchTerm, "$options": "i"}},
+        {"lastName": bson.M{"$regex": searchTerm, "$options": "i"}},
+        {"emailAddress": bson.M{"$regex": searchTerm, "$options": "i"}},
+    },
+}
 
 var users []User
 err := userRepo.Find(ctx, filter, &users)
-
-// Result: finds users where firstName, lastName, or emailAddress contains "john"
 ```
 
 ### Date Range Query
@@ -199,7 +125,12 @@ err := userRepo.Find(ctx, filter, &users)
 from := time.Now().AddDate(0, -1, 0)  // 1 month ago
 to := time.Now()
 
-filter := database.DateRangeFilter("createdAt", from, to)
+filter := bson.M{
+    "createdAt": bson.M{
+        "$gte": from,
+        "$lte": to,
+    },
+}
 
 var users []User
 err := userRepo.Find(ctx, filter, &users)
@@ -208,38 +139,54 @@ err := userRepo.Find(ctx, filter, &users)
 ### Complex Filter Combination
 
 ```go
-// Combine multiple filters with AND
-filters := []bson.M{
-    database.SearchFilter("john", "firstName", "lastName"),
-    bson.M{"status": "active"},
-    bson.M{"role": "user"},
-    database.DateRangeFilter("createdAt", from, to),
+// Combine multiple filters
+filter := bson.M{
+    "$and": []bson.M{
+        {"status": "active"},
+        {"role": "user"},
+        {"$or": []bson.M{
+            {"firstName": bson.M{"$regex": "john", "$options": "i"}},
+            {"lastName": bson.M{"$regex": "john", "$options": "i"}},
+        }},
+        {"createdAt": bson.M{
+            "$gte": from,
+            "$lte": to,
+        }},
+    },
 }
-
-finalFilter := database.AndFilter(filters...)
-
-var users []User
-err := userRepo.Find(ctx, finalFilter, &users)
-```
-
-### OR Filter
-
-```go
-// Users who are admin OR moderator
-filters := []bson.M{
-    bson.M{"role": "admin"},
-    bson.M{"role": "moderator"},
-}
-
-filter := database.OrFilter(filters...)
 
 var users []User
 err := userRepo.Find(ctx, filter, &users)
 ```
 
+### IN Query
+
+```go
+filter := bson.M{
+    "role": bson.M{
+        "$in": []string{"admin", "moderator", "user"},
+    },
+}
+
+var users []User
+err := userRepo.Find(ctx, filter, &users)
+```
+
+### Exists Check
+
+```go
+// Count matching documents
+count, err := userRepo.Count(ctx, bson.M{"emailAddress": "john@example.com"})
+if err != nil {
+    return err
+}
+
+exists := count > 0
+```
+
 ---
 
-## 4. Pagination
+## 3. Pagination
 
 ### Simple Pagination
 
@@ -247,46 +194,29 @@ err := userRepo.Find(ctx, filter, &users)
 page := 1
 pageSize := 20
 
-qb := database.NewQueryBuilder().
-    Filter("status", "active").
-    Sort("createdAt", false).
-    Skip(int64((page - 1) * pageSize)).
-    Limit(int64(pageSize))
+filter := bson.M{"status": "active"}
 
-filter, opts := qb.Build()
-
-// Get total count
-total, err := userRepo.Count(ctx, *filter)
-
-// Get paginated results
-var users []User
-err = userRepo.Find(ctx, *filter, &users, opts)
-```
-
-### Using PaginationQuery Helper
-
-```go
-pq := &database.PaginationQuery{
-    Page:     1,
-    PageSize: 20,
-    SortBy:   "createdAt",
-    SortDesc: true,
+// Count total
+total, err := userRepo.Count(ctx, filter)
+if err != nil {
+    return err
 }
 
-qb := database.NewQueryBuilder().
-    Filter("status", "active").
-    Skip(pq.GetSkip()).
-    Limit(pq.GetLimit())
+// Build options
+opts := options.Find()
+opts.SetSort(bson.D{{Key: "createdAt", Value: -1}})  // -1 = descending
+opts.SetSkip(int64((page - 1) * pageSize))
+opts.SetLimit(int64(pageSize))
 
-filter, opts := qb.Build()
-
-total, _ := userRepo.Count(ctx, *filter)
-
+// Find with pagination
 var users []User
-err := userRepo.Find(ctx, *filter, &users, opts)
+err = userRepo.Find(ctx, filter, &users, opts)
+if err != nil {
+    return err
+}
 
 // Calculate total pages
-totalPages := int(math.Ceil(float64(total) / float64(pq.PageSize)))
+totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
 ```
 
 ### Pagination with Search
@@ -298,35 +228,31 @@ func (r *UserRepository) SearchWithPagination(
     page, pageSize int,
 ) ([]User, int64, error) {
     // Build search filter
-    searchFilter := database.SearchFilter(
-        searchTerm,
-        "firstName",
-        "lastName",
-        "emailAddress",
-    )
+    filter := bson.M{}
+    
+    if searchTerm != "" {
+        filter["$or"] = []bson.M{
+            {"firstName": bson.M{"$regex": searchTerm, "$options": "i"}},
+            {"lastName": bson.M{"$regex": searchTerm, "$options": "i"}},
+            {"emailAddress": bson.M{"$regex": searchTerm, "$options": "i"}},
+        }
+    }
     
     // Count total
-    total, err := r.base.Count(ctx, searchFilter)
+    total, err := r.users.Count(ctx, filter)
     if err != nil {
         return nil, 0, err
     }
     
-    // Build query with pagination
-    qb := database.NewQueryBuilder().
-        Skip(int64((page - 1) * pageSize)).
-        Limit(int64(pageSize)).
-        Sort("createdAt", false)
-    
-    // Merge search filter
-    for key, value := range searchFilter {
-        qb.Filter(key, value)
-    }
-    
-    filter, opts := qb.Build()
+    // Build options
+    opts := options.Find()
+    opts.SetSort(bson.D{{Key: "createdAt", Value: -1}})
+    opts.SetSkip(int64((page - 1) * pageSize))
+    opts.SetLimit(int64(pageSize))
     
     // Find users
     var users []User
-    err = r.base.Find(ctx, *filter, &users, opts)
+    err = r.users.Find(ctx, filter, &users, opts)
     if err != nil {
         return nil, 0, err
     }
@@ -337,23 +263,32 @@ func (r *UserRepository) SearchWithPagination(
 
 ---
 
-## 5. Aggregation
+## 4. Aggregation
 
 ### Group By
 
 ```go
 // Count users by role
-pipeline := database.NewAggregationPipeline().
-    Match(bson.M{"status": "active"}).
-    Group("$role", bson.M{
+pipeline := mongo.Pipeline{
+    {{Key: "$match", Value: bson.M{"status": "active"}}},
+    {{Key: "$group", Value: bson.M{
+        "_id": "$role",
         "count": bson.M{"$sum": 1},
         "avgAge": bson.M{"$avg": "$age"},
-    }).
-    Sort("count", false).
-    Build()
+    }}},
+    {{Key: "$sort", Value: bson.M{"count": -1}}},
+}
+
+cursor, err := userRepo.Collection().Aggregate(ctx, pipeline)
+if err != nil {
+    return err
+}
+defer cursor.Close(ctx)
 
 var results []bson.M
-err := userRepo.Aggregate(ctx, pipeline, &results)
+if err = cursor.All(ctx, &results); err != nil {
+    return err
+}
 
 // Result: [
 //   {"_id": "admin", "count": 10, "avgAge": 35},
@@ -365,251 +300,100 @@ err := userRepo.Aggregate(ctx, pipeline, &results)
 
 ```go
 // Join users with their profiles
-pipeline := database.NewAggregationPipeline().
-    Lookup("user_profiles", "userId", "userId", "profile").
-    Unwind("$profile", true).  // preserveNullAndEmptyArrays
-    Match(bson.M{"status": "active"}).
-    Project(bson.M{
+pipeline := mongo.Pipeline{
+    {{Key: "$lookup", Value: bson.M{
+        "from":         "user_profiles",
+        "localField":   "userId",
+        "foreignField": "userId",
+        "as":           "profile",
+    }}},
+    {{Key: "$unwind", Value: bson.M{
+        "path": "$profile",
+        "preserveNullAndEmptyArrays": true,
+    }}},
+    {{Key: "$match", Value: bson.M{"status": "active"}}},
+    {{Key: "$project", Value: bson.M{
         "firstName": 1,
         "lastName": 1,
         "emailAddress": 1,
         "profile": 1,
-    }).
-    Build()
+    }}},
+}
+
+cursor, err := userRepo.Collection().Aggregate(ctx, pipeline)
+if err != nil {
+    return err
+}
+defer cursor.Close(ctx)
 
 var results []bson.M
-err := userRepo.Aggregate(ctx, pipeline, &results)
+if err = cursor.All(ctx, &results); err != nil {
+    return err
+}
 ```
 
 ### Statistics Aggregation
 
 ```go
-pipeline := database.NewAggregationPipeline().
-    Match(bson.M{"status": "active"}).
-    Group(nil, bson.M{
+pipeline := mongo.Pipeline{
+    {{Key: "$match", Value: bson.M{"status": "active"}}},
+    {{Key: "$group", Value: bson.M{
+        "_id": nil,
         "totalUsers": bson.M{"$sum": 1},
         "avgAge": bson.M{"$avg": "$age"},
         "minAge": bson.M{"$min": "$age"},
         "maxAge": bson.M{"$max": "$age"},
-    }).
-    Build()
+    }}},
+}
+
+cursor, err := userRepo.Collection().Aggregate(ctx, pipeline)
+if err != nil {
+    return err
+}
+defer cursor.Close(ctx)
 
 var stats []bson.M
-err := userRepo.Aggregate(ctx, pipeline, &stats)
-```
-
-### Faceted Search
-
-```go
-pipeline := database.NewAggregationPipeline().
-    Match(bson.M{"status": "active"}).
-    Facet(map[string][]bson.M{
-        "byRole": {
-            {"$group": bson.M{
-                "_id": "$role",
-                "count": bson.M{"$sum": 1},
-            }},
-        },
-        "byAge": {
-            {"$bucket": bson.M{
-                "groupBy": "$age",
-                "boundaries": []int{0, 18, 30, 50, 100},
-                "default": "other",
-            }},
-        },
-    }).
-    Build()
-
-var results []bson.M
-err := userRepo.Aggregate(ctx, pipeline, &results)
+if err = cursor.All(ctx, &stats); err != nil {
+    return err
+}
 ```
 
 ---
 
-## 6. Transactions
+## 5. Repository Pattern
 
-### Basic Transaction
-
-```go
-err := database.Transaction(ctx, client, func(sessCtx mongo.SessionContext) error {
-    userRepo := database.NewBaseRepository(db, "user_accounts")
-    
-    // Operation 1
-    _, err := userRepo.UpdateByField(sessCtx, "userId", "usr_A", bson.M{
-        "$inc": bson.M{"balance": -100},
-    })
-    if err != nil {
-        return err  // Rollback
-    }
-    
-    // Operation 2
-    _, err = userRepo.UpdateByField(sessCtx, "userId", "usr_B", bson.M{
-        "$inc": bson.M{"balance": 100},
-    })
-    if err != nil {
-        return err  // Rollback
-    }
-    
-    return nil  // Commit
-})
-```
-
-### Transaction with Multiple Collections
+### Complete User Repository Example
 
 ```go
-err := database.Transaction(ctx, client, func(sessCtx mongo.SessionContext) error {
-    userRepo := database.NewBaseRepository(db, "user_accounts")
-    orderRepo := database.NewBaseRepository(db, "orders")
-    
-    // Update user
-    _, err := userRepo.UpdateByField(sessCtx, "userId", "usr_123", bson.M{
-        "$inc": bson.M{"orderCount": 1},
-    })
-    if err != nil {
-        return err
-    }
-    
-    // Create order
-    order := &Order{
-        OrderID: "ord_456",
-        UserID: "usr_123",
-        Amount: 100,
-    }
-    _, err = orderRepo.InsertOne(sessCtx, order)
-    if err != nil {
-        return err
-    }
-    
-    return nil
-})
-```
+package user
 
----
+import (
+    "context"
+    "errors"
+    "time"
 
-## 7. Advanced Queries
+    "github.com/vhvplatform/go-shared/mongodb"
+    "go.mongodb.org/mongo-driver/bson"
+    "go.mongodb.org/mongo-driver/mongo"
+    "go.mongodb.org/mongo-driver/mongo/options"
+)
 
-### Increment Field
-
-```go
-// Increment login count
-update := database.IncrementField("loginCount", 1)
-_, err := userRepo.UpdateByField(ctx, "userId", "usr_123", update)
-
-// Also update last login
-update := bson.M{
-    "$inc": bson.M{"loginCount": 1},
-    "$set": bson.M{"lastLoginAt": time.Now()},
-}
-_, err := userRepo.UpdateByField(ctx, "userId", "usr_123", update)
-```
-
-### Array Operations
-
-```go
-// Push to array
-update := database.PushToArray("tags", "premium")
-_, err := userRepo.UpdateByField(ctx, "userId", "usr_123", update)
-
-// Pull from array
-update := database.PullFromArray("tags", "basic")
-_, err := userRepo.UpdateByField(ctx, "userId", "usr_123", update)
-
-// Add to set (unique)
-update := database.AddToSet("interests", "coding")
-_, err := userRepo.UpdateByField(ctx, "userId", "usr_123", update)
-
-// Push multiple
-update := bson.M{
-    "$push": bson.M{
-        "tags": bson.M{
-            "$each": []string{"tag1", "tag2", "tag3"},
-        },
-    },
-}
-_, err := userRepo.UpdateOne(ctx, filter, update)
-```
-
-### Bulk Operations
-
-```go
-// Prepare bulk write models
-models := []mongo.WriteModel{
-    mongo.NewUpdateOneModel().
-        SetFilter(bson.M{"userId": "usr_1"}).
-        SetUpdate(bson.M{"$set": bson.M{"status": "active"}}),
-        
-    mongo.NewUpdateOneModel().
-        SetFilter(bson.M{"userId": "usr_2"}).
-        SetUpdate(bson.M{"$set": bson.M{"status": "inactive"}}),
-        
-    mongo.NewInsertOneModel().
-        SetDocument(bson.M{
-            "userId": "usr_3",
-            "firstName": "New",
-            "lastName": "User",
-        }),
-        
-    mongo.NewDeleteOneModel().
-        SetFilter(bson.M{"userId": "usr_4"}),
-}
-
-result, err := userRepo.BulkWrite(ctx, models)
-
-fmt.Printf("Inserted: %d\n", result.InsertedCount)
-fmt.Printf("Modified: %d\n", result.ModifiedCount)
-fmt.Printf("Deleted: %d\n", result.DeletedCount)
-```
-
-### Exists Check
-
-```go
-// Check if user exists
-exists, err := userRepo.ExistsByField(ctx, "emailAddress", "john@example.com")
-if exists {
-    return errors.New("email already registered")
-}
-
-// Custom exists check
-exists, err := userRepo.Exists(ctx, bson.M{
-    "emailAddress": "john@example.com",
-    "status": "active",
-})
-```
-
-### Count with Filter
-
-```go
-// Count active users
-count, err := userRepo.Count(ctx, bson.M{"status": "active"})
-
-// Count users by role
-adminCount, _ := userRepo.Count(ctx, bson.M{"role": "admin"})
-userCount, _ := userRepo.Count(ctx, bson.M{"role": "user"})
-```
-
----
-
-## Real-World Examples
-
-### User Repository with All Features
-
-```go
 type UserRepository struct {
-    base *database.BaseRepository
+    users *mongodb.Repository
 }
 
 func NewUserRepository(db *mongo.Database) *UserRepository {
     return &UserRepository{
-        base: database.NewBaseRepository(db, "user_accounts"),
+        users: mongodb.NewRepository(db, "user_accounts"),
     }
 }
 
-// Find by email
+// FindByEmail finds a user by email
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*User, error) {
     var user User
-    err := r.base.FindByField(ctx, "emailAddress", email, &user)
+    err := r.users.FindOne(ctx, bson.M{"emailAddress": email}, &user)
     if err != nil {
-        if err == database.ErrNotFound {
+        if errors.Is(err, mongo.ErrNoDocuments) {
             return nil, nil
         }
         return nil, err
@@ -617,55 +401,78 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*User, 
     return &user, nil
 }
 
-// Search with pagination
-func (r *UserRepository) Search(
-    ctx context.Context,
-    searchTerm, role, status string,
-    page, pageSize int,
-) ([]User, int64, error) {
-    // Build filters
-    filters := []bson.M{}
+// Create creates a new user
+func (r *UserRepository) Create(ctx context.Context, user *User) error {
+    user.ID = primitive.NewObjectID()
+    user.CreatedAt = time.Now()
+    user.UpdatedAt = time.Now()
+    
+    _, err := r.users.InsertOne(ctx, user)
+    if err != nil {
+        if mongo.IsDuplicateKeyError(err) {
+            return errors.New("user already exists")
+        }
+        return err
+    }
+    return nil
+}
+
+// Update updates a user
+func (r *UserRepository) Update(ctx context.Context, userID string, update bson.M) (*User, error) {
+    update["updatedAt"] = time.Now()
+    
+    var user User
+    opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+    
+    err := r.users.Collection().FindOneAndUpdate(
+        ctx,
+        bson.M{"userId": userID},
+        bson.M{"$set": update},
+        opts,
+    ).Decode(&user)
+    
+    if err != nil {
+        if errors.Is(err, mongo.ErrNoDocuments) {
+            return nil, nil
+        }
+        return nil, err
+    }
+    
+    return &user, nil
+}
+
+// List returns paginated users
+func (r *UserRepository) List(ctx context.Context, page, pageSize int, searchTerm, role string) ([]User, int64, error) {
+    // Build filter
+    filter := bson.M{}
     
     if searchTerm != "" {
-        filters = append(filters, database.SearchFilter(
-            searchTerm,
-            "firstName",
-            "lastName",
-            "emailAddress",
-        ))
+        filter["$or"] = []bson.M{
+            {"firstName": bson.M{"$regex": searchTerm, "$options": "i"}},
+            {"lastName": bson.M{"$regex": searchTerm, "$options": "i"}},
+            {"emailAddress": bson.M{"$regex": searchTerm, "$options": "i"}},
+        }
     }
     
     if role != "" {
-        filters = append(filters, bson.M{"role": role})
+        filter["role"] = role
     }
-    
-    if status != "" {
-        filters = append(filters, bson.M{"status": status})
-    }
-    
-    filter := database.AndFilter(filters...)
     
     // Count total
-    total, err := r.base.Count(ctx, filter)
+    total, err := r.users.Count(ctx, filter)
     if err != nil {
         return nil, 0, err
     }
     
-    // Build query with pagination
-    qb := database.NewQueryBuilder().
-        Skip(int64((page - 1) * pageSize)).
-        Limit(int64(pageSize)).
-        Sort("createdAt", false)
-    
-    for key, value := range filter {
-        qb.Filter(key, value)
-    }
-    
-    finalFilter, opts := qb.Build()
+    // Build options
+    opts := options.Find()
+    opts.SetSort(bson.D{{Key: "createdAt", Value: -1}})
+    opts.SetSkip(int64((page - 1) * pageSize))
+    opts.SetLimit(int64(pageSize))
     
     // Find users
     var users []User
-    err = r.base.Find(ctx, *finalFilter, &users, opts)
+    err = r.users.Find(ctx, filter, &users, opts)
     if err != nil {
         return nil, 0, err
     }
@@ -673,17 +480,38 @@ func (r *UserRepository) Search(
     return users, total, nil
 }
 
-// Get user statistics
+// Delete deletes a user
+func (r *UserRepository) Delete(ctx context.Context, userID string) error {
+    _, err := r.users.DeleteOne(ctx, bson.M{"userId": userID})
+    return err
+}
+
+// Exists checks if a user exists
+func (r *UserRepository) Exists(ctx context.Context, email string) (bool, error) {
+    count, err := r.users.Count(ctx, bson.M{"emailAddress": email})
+    if err != nil {
+        return false, err
+    }
+    return count > 0, nil
+}
+
+// GetStats gets user statistics
 func (r *UserRepository) GetStats(ctx context.Context) (*UserStats, error) {
-    pipeline := database.NewAggregationPipeline().
-        Group("$role", bson.M{
+    pipeline := mongo.Pipeline{
+        {{Key: "$group", Value: bson.M{
+            "_id": "$role",
             "count": bson.M{"$sum": 1},
-        }).
-        Build()
+        }}},
+    }
+    
+    cursor, err := r.users.Collection().Aggregate(ctx, pipeline)
+    if err != nil {
+        return nil, err
+    }
+    defer cursor.Close(ctx)
     
     var results []bson.M
-    err := r.base.Aggregate(ctx, pipeline, &results)
-    if err != nil {
+    if err = cursor.All(ctx, &results); err != nil {
         return nil, err
     }
     
@@ -703,20 +531,104 @@ func (r *UserRepository) GetStats(ctx context.Context) (*UserStats, error) {
 
 ---
 
+## Common Query Patterns
+
+### 1. Find One or Create
+
+```go
+func (r *UserRepository) FindOrCreate(ctx context.Context, email string) (*User, error) {
+    // Try to find
+    user, err := r.FindByEmail(ctx, email)
+    if err != nil {
+        return nil, err
+    }
+    
+    // If found, return
+    if user != nil {
+        return user, nil
+    }
+    
+    // Otherwise create
+    newUser := &User{
+        EmailAddress: email,
+        Status: "pending",
+    }
+    
+    err = r.Create(ctx, newUser)
+    if err != nil {
+        return nil, err
+    }
+    
+    return newUser, nil
+}
+```
+
+### 2. Increment Field
+
+```go
+func (r *UserRepository) IncrementLoginCount(ctx context.Context, userID string) error {
+    update := bson.M{
+        "$inc": bson.M{"loginCount": 1},
+        "$set": bson.M{"lastLoginAt": time.Now()},
+    }
+    
+    _, err := r.users.UpdateOne(
+        ctx,
+        bson.M{"userId": userID},
+        update,
+    )
+    return err
+}
+```
+
+### 3. Array Operations
+
+```go
+// Push to array
+func (r *UserRepository) AddTag(ctx context.Context, userID string, tag string) error {
+    update := bson.M{
+        "$push": bson.M{"tags": tag},
+    }
+    
+    _, err := r.users.UpdateOne(ctx, bson.M{"userId": userID}, update)
+    return err
+}
+
+// Pull from array
+func (r *UserRepository) RemoveTag(ctx context.Context, userID string, tag string) error {
+    update := bson.M{
+        "$pull": bson.M{"tags": tag},
+    }
+    
+    _, err := r.users.UpdateOne(ctx, bson.M{"userId": userID}, update)
+    return err
+}
+
+// Add to set (unique)
+func (r *UserRepository) AddInterest(ctx context.Context, userID string, interest string) error {
+    update := bson.M{
+        "$addToSet": bson.M{"interests": interest},
+    }
+    
+    _, err := r.users.UpdateOne(ctx, bson.M{"userId": userID}, update)
+    return err
+}
+```
+
+---
+
 ## Performance Tips
 
 1. **Use Indexes** - Create indexes for frequently queried fields
-2. **Projection** - Only select fields you need
+2. **Projection** - Only select fields you need with `$project`
 3. **Limit Results** - Always use pagination
 4. **Avoid `$where`** - Use native MongoDB operators
-5. **Batch Operations** - Use bulk writes for multiple updates
-6. **Connection Pooling** - Configure proper pool size
-7. **Monitor Queries** - Use MongoDB profiler
+5. **Connection Pooling** - Configure proper pool size
+6. **Monitor Queries** - Use MongoDB profiler
 
 ---
 
 ## See Also
 
-- [pkg/database/README.md](./pkg/database/README.md) - Complete API documentation
-- [pkg/database/examples.go](./pkg/database/examples.go) - More code examples
-- [MongoDB Documentation](https://docs.mongodb.com/manual/)
+- [MongoDB Go Driver Documentation](https://pkg.go.dev/go.mongodb.org/mongo-driver/mongo)
+- [go-shared/mongodb Repository](https://github.com/vhvplatform/go-shared/tree/main/mongodb)
