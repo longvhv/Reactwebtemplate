@@ -1,10 +1,11 @@
 import { memo, useState, useRef, useEffect } from "react";
-import { useNavigate } from "../../platform/navigation/Router"; // ✅ Use platform abstraction (fixed path)
+import { useNavigation } from "@/shims/router";
 import { 
   User, Settings, HelpCircle, LogOut, ChevronRight, 
-  Crown, Shield, Mail, Bell, Palette, Keyboard, Moon, Sun, Monitor
+  Crown, Shield, Mail, Bell, Palette, Keyboard, Moon, Sun, Monitor, Database, FileCode
 } from "lucide-react";
 import { Button } from "../ui/button";
+import { useLanguage } from "../../providers/LanguageProvider";
 
 interface UserProfileDropdownProps {
   theme: "light" | "dark" | "system";
@@ -26,7 +27,8 @@ interface UserProfileDropdownProps {
 export const UserProfileDropdown = memo(({ theme, onCycleTheme }: UserProfileDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+  const navigation = useNavigation();
+  const { t } = useLanguage();
 
   // Mock user data
   const user = {
@@ -38,8 +40,6 @@ export const UserProfileDropdown = memo(({ theme, onCycleTheme }: UserProfileDro
 
   // Click outside to close
   useEffect(() => {
-    if (typeof document === 'undefined') return; // ✅ Guard for React Native compatibility
-    
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -57,23 +57,29 @@ export const UserProfileDropdown = memo(({ theme, onCycleTheme }: UserProfileDro
     {
       section: "Account",
       items: [
-        { icon: User, label: "Hồ sơ của tôi", shortcut: "⌘P", action: () => navigate("/profile") },
-        { icon: Settings, label: "Cài đặt", shortcut: "⌘,", action: () => navigate("/settings") },
+        { icon: User, label: t('navigation.profile'), shortcut: "⌘P", action: () => navigation.push("/profile") },
+        { icon: Settings, label: t('navigation.settings'), shortcut: "⌘,", action: () => navigation.push("/settings") },
         { icon: Mail, label: "Tin nhắn", badge: "3", action: () => console.log("Messages") },
         { icon: Bell, label: "Thông báo", action: () => console.log("Notifications") },
       ],
     },
     {
+      section: "Developer",
+      items: [
+        { icon: FileCode, label: t('navigation.devDocs'), action: () => navigation.push("/dev-docs") },
+      ],
+    },
+    {
       section: "Preferences",
       items: [
-        { icon: Palette, label: "Giao diện", action: () => navigate("/appearance") },
+        { icon: Palette, label: t('navigation.appearance'), action: () => navigation.push("/appearance") },
         { icon: Keyboard, label: "Phím tắt", shortcut: "⌘K", action: () => console.log("Shortcuts") },
       ],
     },
     {
       section: "Help",
       items: [
-        { icon: HelpCircle, label: "Trợ giúp & Hỗ trợ", action: () => navigate("/help") },
+        { icon: HelpCircle, label: t('navigation.help'), action: () => navigation.push("/help") },
         { icon: Shield, label: "Chính sách bảo mật", action: () => console.log("Privacy") },
       ],
     },

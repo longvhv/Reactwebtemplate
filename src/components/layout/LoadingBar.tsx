@@ -1,5 +1,5 @@
 import { memo, useState, useEffect } from "react";
-import { useLocation } from "../../platform/navigation/Router"; // ✅ Use platform abstraction (fixed path)
+import { useLocation } from "@/shims/router";
 
 /**
  * Loading Progress Bar - Inspired by YouTube & GitHub

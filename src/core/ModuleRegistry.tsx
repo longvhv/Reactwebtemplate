@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { logger } from "../utils/logger";
 
 /**
  * Interface for nested menu items (support up to 4 levels)
@@ -67,22 +66,22 @@ export class ModuleRegistry {
   public register(module: ModuleDefinition): void {
     // Defensive check: ensure module is valid
     if (!module) {
-      logger.error('Attempted to register undefined/null module');
+      console.error('Attempted to register undefined/null module');
       return;
     }
     
     if (!module.id) {
-      logger.error('Attempted to register module without id:', module);
+      console.error('Attempted to register module without id:', module);
       return;
     }
     
     if (!Array.isArray(module.routes)) {
-      logger.error(`Module ${module.id} has invalid routes (not an array):`, module.routes);
+      console.error(`Module ${module.id} has invalid routes (not an array):`, module.routes);
       return;
     }
     
     if (this.modules.has(module.id)) {
-      logger.warn(`Module ${module.id} đã được đăng ký, đang ghi đè...`);
+      console.warn(`Module ${module.id} đã được đăng ký, đang ghi đè...`);
     }
     
     this.modules.set(module.id, {
@@ -90,7 +89,7 @@ export class ModuleRegistry {
       enabled: module.enabled !== false, // Mặc định enabled = true
     });
     
-    logger.log(`✓ Module đã đăng ký: ${module.name} (${module.id})`);
+    console.log(`✓ Module đã đăng ký: ${module.name} (${module.id})`);
   }
 
   /**
@@ -98,7 +97,7 @@ export class ModuleRegistry {
    */
   public unregister(moduleId: string): void {
     if (this.modules.delete(moduleId)) {
-      logger.log(`✓ Module đã hủy đăng ký: ${moduleId}`);
+      console.log(`✓ Module đã hủy đăng ký: ${moduleId}`);
     }
   }
 
@@ -134,7 +133,7 @@ export class ModuleRegistry {
       if (module && Array.isArray(module.routes)) {
         routes.push(...module.routes);
       } else {
-        logger.warn(`Module ${module?.id || 'unknown'} has invalid routes:`, module?.routes);
+        console.warn(`Module ${module?.id || 'unknown'} has invalid routes:`, module?.routes);
       }
     });
     
@@ -148,7 +147,7 @@ export class ModuleRegistry {
     const module = this.modules.get(moduleId);
     if (module) {
       module.enabled = enabled;
-      logger.log(`✓ Module ${moduleId} ${enabled ? 'đã kích hoạt' : 'đã vô hiệu hóa'}`);
+      console.log(`✓ Module ${moduleId} ${enabled ? 'đã kích hoạt' : 'đã vô hiệu hóa'}`);
     }
   }
 
@@ -157,6 +156,6 @@ export class ModuleRegistry {
    */
   public reset(): void {
     this.modules.clear();
-    logger.log('✓ Module Registry đã được reset');
+    console.log('✓ Module Registry đã được reset');
   }
 }

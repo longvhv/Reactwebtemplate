@@ -2,17 +2,13 @@
  * Preload & Prefetch Utilities
  * 
  * Smart resource loading for better performance
- * NOTE: Web-only utilities - All functions check for browser environment
  */
 
 /**
  * Preload critical resources
  * Call this early in app initialization
- * Web-only utility
  */
 export function preloadCriticalResources() {
-  if (typeof document === 'undefined') return; // ✅ Guard for React Native compatibility
-  
   // Preload fonts
   const fontPreload = document.createElement('link');
   fontPreload.rel = 'preload';
@@ -59,11 +55,8 @@ export function preloadRoutes(moduleNames: string[]) {
 /**
  * Intelligent prefetching based on user behavior
  * Prefetch links when user hovers over them
- * Web-only utility
  */
 export function setupIntelligentPrefetch() {
-  if (typeof document === 'undefined' || typeof window === 'undefined') return; // ✅ Guard for React Native compatibility
-  
   let hoverTimer: number | null = null;
   
   const handleMouseEnter = (e: MouseEvent) => {

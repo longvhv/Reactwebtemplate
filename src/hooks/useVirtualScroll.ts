@@ -53,13 +53,6 @@ export function useVirtualScroll({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    
-    // ✅ Guard for React Native - ResizeObserver is web-only
-    if (typeof window === 'undefined' || typeof ResizeObserver === 'undefined') {
-      // Fallback: use static height in non-browser environments
-      setContainerHeight(600); // Default height
-      return;
-    }
 
     const handleScroll = () => {
       setScrollTop(container.scrollTop);

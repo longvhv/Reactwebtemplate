@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "../../platform/navigation/Router"; // ✅ Use platform abstraction
+import { useNavigation } from "@/shims/router";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -12,7 +12,7 @@ import { LogIn, Github, Sparkles } from "lucide-react";
  * Elegant login với glassmorphism và smooth animations
  */
 export function LoginPage() {
-  const navigate = useNavigate();
+  const navigation = useNavigation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,10 +25,8 @@ export function LoginPage() {
     setTimeout(() => {
       setLoading(false);
       // Mock login success
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem("vhv-auth-token", "mock-token-123");
-      }
-      navigate("/");
+      localStorage.setItem("vhv-auth-token", "mock-token-123");
+      navigation.push("/");
     }, 1000);
   };
 

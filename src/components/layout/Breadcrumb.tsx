@@ -1,6 +1,7 @@
-import { useLocation, Link } from "../../platform/navigation/Router"; // ✅ Use platform abstraction (fixed path)
+import { useLocation } from "@/shims/router";
+import { Link } from "@/shims/router";
 import { Home, ChevronRight } from "lucide-react";
-import { useTranslation } from "../../providers/LanguageProvider";
+import { useTranslation } from "react-i18next";
 
 /**
  * Breadcrumb Navigation - Inspired by GitHub
@@ -31,11 +32,11 @@ export const Breadcrumb = () => {
   return (
     <nav className="flex items-center gap-2 text-sm animate-in slide-in-from-left-2 duration-300">
       <Link
-        to="/"
+        href="/"
         className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors duration-150 group"
       >
         <Home className="w-4 h-4 group-hover:scale-110 transition-transform duration-150" />
-        <span className="hidden sm:inline">{t.navigation.dashboard}</span>
+        <span className="hidden sm:inline">{t('navigation.dashboard')}</span>
       </Link>
 
       {pathnames.map((segment, index) => {
@@ -51,7 +52,7 @@ export const Breadcrumb = () => {
               </span>
             ) : (
               <Link
-                to={to}
+                href={to}
                 className="text-muted-foreground hover:text-foreground transition-colors duration-150 hover:underline"
               >
                 {formatSegment(segment)}

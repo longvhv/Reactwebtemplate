@@ -27,14 +27,6 @@ export function useImageLazyLoad(
 
   useEffect(() => {
     if (!imgRef.current) return;
-    
-    // ✅ Guard for React Native - IntersectionObserver and Image are web-only
-    if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
-      // Fallback: load image immediately in non-browser environments
-      setImageSrc(src);
-      setIsLoaded(true);
-      return;
-    }
 
     const observer = new IntersectionObserver(
       (entries) => {

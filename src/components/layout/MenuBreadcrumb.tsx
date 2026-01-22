@@ -1,5 +1,5 @@
 import { memo, useMemo } from "react";
-import { useLocation } from "../../platform/navigation/Router"; // ✅ Use platform abstraction (fixed path)
+import { useLocation } from "@/shims/router";
 import { ChevronRight } from "lucide-react";
 import { ModuleRegistry, MenuItem } from "../../core/ModuleRegistry";
 

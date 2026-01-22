@@ -22,7 +22,6 @@ export function useClickOutside<T extends HTMLElement = HTMLElement>(
 ) {
   useEffect(() => {
     if (!enabled) return;
-    if (typeof document === 'undefined') return; // ✅ Guard for React Native compatibility
 
     const listener = (event: MouseEvent | TouchEvent) => {
       const element = ref.current;

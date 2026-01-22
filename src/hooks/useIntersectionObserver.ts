@@ -28,13 +28,6 @@ export function useIntersectionObserver(
   useEffect(() => {
     const element = elementRef.current;
     if (!element) return;
-    
-    // ✅ Guard for React Native - IntersectionObserver is web-only
-    if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
-      // Fallback: assume always visible in non-browser environments
-      setIsVisible(true);
-      return;
-    }
 
     // Nếu đã visible và freeze enabled, không cần observe nữa
     if (freezeOnceVisible && isVisible) return;

@@ -4,6 +4,7 @@
  */
 
 import { Check, Languages, Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import {
   DropdownMenu,
@@ -13,13 +14,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '../ui/dropdown-menu';
-import { useLanguage } from '../../providers/LanguageProvider';
 import { SUPPORTED_LANGUAGES } from '../../constants/languages';
 
 export function LanguageSwitcher() {
-  const { language, setLanguage } = useLanguage();
+  const { i18n, t } = useTranslation();
 
-  const currentLanguage = SUPPORTED_LANGUAGES.find(lang => lang.code === language);
+  const currentLanguage = SUPPORTED_LANGUAGES.find(lang => lang.code === i18n.language);
+
+  const changeLanguage = (langCode: string) => {
+    i18n.changeLanguage(langCode);
+  };
 
   return (
     <DropdownMenu>
@@ -39,15 +43,15 @@ export function LanguageSwitcher() {
       <DropdownMenuContent align="end" className="w-56 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
         <DropdownMenuLabel className="flex items-center gap-2 text-xs text-muted-foreground">
           <Languages className="w-3.5 h-3.5" />
-          Select Language
+          {t('common.selectLanguage')}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {SUPPORTED_LANGUAGES.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
-            onClick={() => setLanguage(lang.code)}
+            onClick={() => changeLanguage(lang.code)}
             className={`flex items-center justify-between cursor-pointer transition-all duration-150 ${
-              language === lang.code 
+              i18n.language === lang.code 
                 ? 'bg-primary/10 text-primary font-medium' 
                 : 'hover:bg-muted'
             }`}
@@ -59,7 +63,7 @@ export function LanguageSwitcher() {
                 <span className="text-xs text-muted-foreground">{lang.name}</span>
               </div>
             </div>
-            {language === lang.code && (
+            {i18n.language === lang.code && (
               <Check className="w-4 h-4 text-primary" />
             )}
           </DropdownMenuItem>

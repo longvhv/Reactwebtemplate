@@ -1,5 +1,5 @@
 import { ChevronRight, Home } from "lucide-react";
-import { Link, useLocation } from "./platform/navigation/Router"; // ✅ Use platform abstraction
+import { Link, useLocation } from "@/shims/router";
 
 interface BreadcrumbItem {
   label: string;
@@ -28,7 +28,7 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
   return (
     <nav className="flex items-center space-x-1 text-sm mb-6">
       <Link
-        to="/"
+        href="/"
         className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors duration-200 group"
       >
         <Home className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
@@ -42,7 +42,7 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
             {item.href && !isLast ? (
               <Link
-                to={item.href}
+                href={item.href}
                 className="text-muted-foreground hover:text-foreground transition-colors duration-200 hover:underline underline-offset-4"
               >
                 {item.label}

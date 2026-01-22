@@ -3,13 +3,14 @@
  * Demonstrate internationalization usage
  */
 
-import { Card } from "../components/ui/card";
-import { Label } from "../components/ui/label";
-import { Input } from "../components/ui/input";
-import { Button } from "../components/ui/button";
-import { useLanguage } from "../providers/LanguageProvider";
-import { showAlert } from "../platform/utils/alert"; // ✅ Use platform-safe alert
-import { SUPPORTED_LANGUAGES } from "../constants/languages";
+import { useTranslation, useLanguage } from '../providers/LanguageProvider';
+import { LanguageSwitcher } from '../components/common';
+import { Card } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { useState } from 'react';
+import { SUPPORTED_LANGUAGES } from '../constants/languages';
 
 /**
  * Example 1: Basic Translation
@@ -127,7 +128,7 @@ export function FormValidationExample() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      showAlert(t.auth.loginSuccess); // ✅ Platform-safe alert
+      alert(t.auth.loginSuccess);
     }
   };
 

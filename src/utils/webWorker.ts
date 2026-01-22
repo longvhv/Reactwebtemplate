@@ -1,12 +1,13 @@
 /**
+ * Web Worker Utilities
+ * 
+ * Offload heavy computations to background threads
+ */
+
+/**
  * Create inline web worker from function
- * Web-only utility
  */
 export function createWorker(fn: Function): Worker {
-  if (typeof window === 'undefined' || typeof Worker === 'undefined') {
-    throw new Error('Web Workers are not supported in this environment');
-  }
-  
   const blob = new Blob([`(${fn.toString()})()`], { type: 'application/javascript' });
   const url = URL.createObjectURL(blob);
   return new Worker(url);

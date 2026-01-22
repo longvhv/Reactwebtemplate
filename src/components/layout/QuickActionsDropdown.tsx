@@ -76,8 +76,6 @@ export const QuickActionsDropdown = memo(() => {
 
   // Click outside to close
   useEffect(() => {
-    if (typeof document === 'undefined') return; // ✅ Guard for React Native compatibility
-    
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);

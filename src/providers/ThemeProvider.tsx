@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 type Theme = "light" | "dark" | "system";
@@ -16,7 +18,7 @@ interface ThemeProviderProps {
 }
 
 /**
- * Theme Provider
+ * Theme Provider for Next.js
  * 
  * Quản lý theme (light/dark) cho toàn bộ ứng dụng.
  * Hỗ trợ:
@@ -26,30 +28,39 @@ interface ThemeProviderProps {
  * - Lưu preference vào localStorage
  */
 export function ThemeProvider({ children, defaultTheme = "system" }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return defaultTheme;
-    }
-    const stored = localStorage.getItem("vhv-theme") as Theme;
-    return stored || defaultTheme;
-  });
-
+  const [theme, setThemeState] = useState<Theme>(defaultTheme);
   const [actualTheme, setActualTheme] = useState<"light" | "dark">("light");
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+    const stored = localStorage.getItem("vhv-theme") as Theme;
+    if (stored) {
+      setThemeState(stored);
+    }
+  }, []);
+
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("vhv-theme", newTheme);
+    }
+  };
 
   // Áp dụng theme
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    
+    if (!mounted) return;
+
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
 
     let applied: "light" | "dark" = "light";
 
     if (theme === "system") {
-      // ✅ Guard: matchMedia not available on React Native
-      const systemTheme = (typeof window !== 'undefined' && window.matchMedia)
-        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-        : "light"; // Default to light on React Native
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
       applied = systemTheme;
     } else {
       applied = theme;
@@ -57,15 +68,11 @@ export function ThemeProvider({ children, defaultTheme = "system" }: ThemeProvid
 
     root.classList.add(applied);
     setActualTheme(applied);
-  }, [theme]);
+  }, [theme, mounted]);
 
   // Lắng nghe thay đổi system preference
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    if (theme !== "system") return;
-
-    // ✅ Guard: matchMedia not available on React Native
-    if (!window.matchMedia) return;
+    if (!mounted || theme !== "system") return;
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
@@ -78,13 +85,7 @@ export function ThemeProvider({ children, defaultTheme = "system" }: ThemeProvid
 
     mediaQuery.addEventListener("change", handler);
     return () => mediaQuery.removeEventListener("change", handler);
-  }, [theme]);
-
-  // Lưu theme vào localStorage
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
-    localStorage.setItem("vhv-theme", theme);
-  }, [theme]);
+  }, [theme, mounted]);
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, actualTheme }}>

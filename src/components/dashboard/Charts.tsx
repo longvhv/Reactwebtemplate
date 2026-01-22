@@ -1,22 +1,21 @@
+import { Card } from "../ui/card";
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
 } from "recharts";
-import { Card } from "../../components/ui/card";
 
 // Revenue Chart Data
 const revenueData = [
@@ -60,14 +59,15 @@ const trafficData = [
  * Revenue Overview Chart
  */
 export const RevenueChart = memo(() => {
+  const { t } = useTranslation();
   return (
     <Card className="p-6 border-border/40 shadow-sm">
       <div className="mb-6">
         <h3 className="text-lg font-semibold tracking-tight mb-1">
-          Tổng quan doanh thu
+          {t("dashboard.revenue_overview")}
         </h3>
         <p className="text-sm text-muted-foreground">
-          Doanh thu, chi phí và lợi nhuận theo tháng
+          {t("dashboard.revenue_expenses_profit")}
         </p>
       </div>
       <ResponsiveContainer width="100%" height={300}>
@@ -128,14 +128,15 @@ RevenueChart.displayName = "RevenueChart";
  * User Activity Chart
  */
 export const ActivityChart = memo(() => {
+  const { t } = useTranslation();
   return (
     <Card className="p-6 border-border/40 shadow-sm">
       <div className="mb-6">
         <h3 className="text-lg font-semibold tracking-tight mb-1">
-          Hoạt động người dùng
+          {t("dashboard.user_activity")}
         </h3>
         <p className="text-sm text-muted-foreground">
-          Số người dùng hoạt động trong tuần
+          {t("dashboard.weekly_user_activity")}
         </p>
       </div>
       <ResponsiveContainer width="100%" height={300}>
@@ -180,14 +181,15 @@ ActivityChart.displayName = "ActivityChart";
  * Device Distribution Chart
  */
 export const DeviceChart = memo(() => {
+  const { t } = useTranslation();
   return (
     <Card className="p-6 border-border/40 shadow-sm">
       <div className="mb-6">
         <h3 className="text-lg font-semibold tracking-tight mb-1">
-          Phân bố thiết bị
+          {t("dashboard.device_distribution")}
         </h3>
         <p className="text-sm text-muted-foreground">
-          Tỷ lệ truy cập theo thiết bị
+          {t("dashboard.device_access_ratio")}
         </p>
       </div>
       <div className="flex items-center justify-between">
@@ -233,14 +235,15 @@ DeviceChart.displayName = "DeviceChart";
  * Traffic Sources Chart
  */
 export const TrafficChart = memo(() => {
+  const { t } = useTranslation();
   return (
     <Card className="p-6 border-border/40 shadow-sm">
       <div className="mb-6">
         <h3 className="text-lg font-semibold tracking-tight mb-1">
-          Nguồn truy cập
+          {t("dashboard.traffic_sources")}
         </h3>
         <p className="text-sm text-muted-foreground">
-          Số lượng truy cập theo nguồn
+          {t("dashboard.access_by_source")}
         </p>
       </div>
       <ResponsiveContainer width="100%" height={200}>

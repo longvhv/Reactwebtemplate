@@ -9,14 +9,8 @@ export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false);
 
   useEffect(() => {
-    // SSR guard
+    // Check if window is defined (client-side)
     if (typeof window === 'undefined') {
-      return;
-    }
-
-    // ✅ Guard: matchMedia not available on React Native
-    if (!window.matchMedia) {
-      setMatches(false); // Default to false on React Native
       return;
     }
 

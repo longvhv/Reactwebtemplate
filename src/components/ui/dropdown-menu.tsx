@@ -71,9 +71,6 @@ export function DropdownMenuContent({
   const ref = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    // ✅ Guard for React Native - document is web-only
-    if (typeof document === 'undefined') return;
-    
     const handleClickOutside = (event: MouseEvent) => {
       if (ref.current && !ref.current.contains(event.target as Node)) {
         onOpenChange?.(false);

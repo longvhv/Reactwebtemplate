@@ -51,9 +51,6 @@ export function useResourceTiming(enabled = true) {
   useEffect(() => {
     if (!enabled || !('performance' in window)) return;
     
-    // ✅ Guard: PerformanceObserver not available on React Native
-    if (typeof PerformanceObserver === 'undefined') return;
-    
     const updateTimings = () => {
       const entries = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
       
@@ -97,9 +94,6 @@ export function useResourceTiming(enabled = true) {
     updateTimings();
     
     // Listen for new resources
-    // ✅ Additional guard before creating observer
-    if (typeof PerformanceObserver === 'undefined') return;
-    
     const observer = new PerformanceObserver((list) => {
       updateTimings();
     });
@@ -124,12 +118,6 @@ export function useResourceLoad(resourceUrl: string) {
   
   useEffect(() => {
     if (!('performance' in window)) {
-      setLoading(false);
-      return;
-    }
-    
-    // ✅ Guard: PerformanceObserver not available on React Native
-    if (typeof PerformanceObserver === 'undefined') {
       setLoading(false);
       return;
     }

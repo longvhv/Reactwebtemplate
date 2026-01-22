@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { useLocation } from '../platform/navigation/Router';
+import { useLocation } from '@/shims/router';
 import { STORAGE_KEYS, LIMITS } from '../constants/app';
 import { getStorageItem, setStorageItem } from '../lib/storage';
 

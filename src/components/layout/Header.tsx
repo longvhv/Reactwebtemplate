@@ -1,204 +1,167 @@
+'use client';
+
 import { useState, useEffect } from "react";
-import { Menu, X, Sparkles, Search, Command, Clock, ArrowRight, BarChart, Settings, ChevronDown } from "lucide-react";
-import { Button } from "../ui/button";
-import { CommandPalette } from "./CommandPalette";
-import { Breadcrumb } from "./Breadcrumb";
-import { NotificationsDropdown } from "./NotificationsDropdown";
-import { QuickActionsDropdown } from "./QuickActionsDropdown";
-import { UserProfileDropdown } from "./UserProfileDropdown";
-import { LoadingBar } from "./LoadingBar";
-import { LanguageSwitcher } from "../common/LanguageSwitcher";
+import { useNavigation } from "@/shims/router";
+import { Menu, X, Search, Bell, User, Settings, LogOut, BookOpen, FileCode } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/providers/ThemeProvider";
+import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import type { HeaderProps, LanguageCode } from "../../types";
-import { LANGUAGES, MOCK_RECENT_SEARCHES } from "../../constants/navigation";
-import { APP_CONFIG, LAYOUT_CONFIG } from "../../constants/app";
-import { useKeyboardShortcut } from "../../hooks/useKeyboardShortcut";
-import { useTranslation } from "../../providers/LanguageProvider";
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
-/**
- * Enterprise Header Component - V2.0
- * 
- * NEW FEATURES:
- * - 🌍 Language Selector with flags
- * - 🔔 Real-time notification badge
- * - ⚡ Quick actions with keyboard shortcuts
- * - 🔍 Enhanced search with recent searches
- * - 💫 Smooth transitions & animations
- * 
- * EXISTING FEATURES:
- * - Glassmorphism with backdrop blur
- * - Command Palette (⌘K)
- * - Breadcrumb navigation
- * - Notifications dropdown
- * - User profile dropdown
- * - Responsive design
- */
-export const Header = ({ 
-  sidebarOpen, 
-  onToggleSidebar, 
-  theme, 
-  actualTheme,
-  onCycleTheme,
-  onSetTheme,
-  sidebarCollapsed
-}: HeaderProps) => {
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+export function Header() {
   const { t } = useTranslation();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const navigation = useNavigation();
 
-  const recentSearches = MOCK_RECENT_SEARCHES;
-
-  // Keyboard shortcut for search
-  useKeyboardShortcut({
-    key: 'k',
-    modifiers: ['cmd', 'ctrl'],
-    callback: () => setCommandPaletteOpen(true),
-  });
-
-  // Click outside to close search suggestions
   useEffect(() => {
-    // ✅ Guard for React Native - document is web-only
-    if (typeof document === 'undefined') return;
-    
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.search-container')) {
-        setSearchFocused(false);
-      }
-    };
+    setMounted(true);
+  }, []);
 
-    if (searchFocused) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [searchFocused]);
-
-  return (
-    <>
-      {/* Loading Progress Bar */}
-      <LoadingBar />
-
-      <header className={`fixed top-0 right-0 left-0 z-30 glass border-b border-border/40 transition-all duration-300 ${sidebarCollapsed ? 'lg:left-20' : 'lg:left-64'}`}>
-        {/* Main Header */}
-        <div className="flex items-center justify-between px-4 md:px-6 py-3">
-          {/* Left Section */}
-          <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-            {/* Mobile Menu Toggle */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onToggleSidebar}
-              className="lg:hidden hover:scale-105 active:scale-95 transition-transform duration-150 flex-shrink-0"
-              aria-label="Toggle sidebar"
-            >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-
-            {/* Mobile Logo */}
-            <div className="flex items-center gap-2 lg:hidden flex-shrink-0">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <h1 className="text-sm md:text-base font-semibold tracking-tight">{APP_CONFIG.name}</h1>
-            </div>
-
-            {/* Enhanced Search Bar (Desktop) */}
-            <div className="hidden md:block relative search-container">
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-muted/50 hover:bg-muted/70 transition-all duration-200 min-w-[300px] lg:min-w-[360px] group border border-border/40 hover:border-primary/30 hover:shadow-sm">
-                <Search className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-200 flex-shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm hoặc nhảy đến..."
-                  className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                />
-                <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg bg-background/80 text-muted-foreground border border-border/40 group-hover:border-primary/30 transition-colors duration-200">
-                  <Command className="w-3 h-3" />
-                  <span className="font-medium">K</span>
-                </div>
-              </div>
-
-              {/* Dropdown - Tìm kiếm gần đây */}
-              {searchFocused && (
-                <div className="absolute top-full left-0 right-0 bg-card/95 backdrop-blur-xl border border-border/40 shadow-xl rounded-b-xl mt-1 max-h-[300px] overflow-y-auto animate-in fade-in-0 slide-in-from-top-2 duration-200 z-50">
-                  <div className="p-3">
-                    <div className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                      <Clock className="w-3.5 h-3.5" />
-                      Tìm kiếm gần đây
-                    </div>
-                    <div className="mt-1 space-y-0.5">
-                      {recentSearches.map(search => {
-                        const Icon = search.icon;
-                        return (
-                          <button
-                            key={search.id}
-                            className="w-full flex items-center gap-3 py-2 px-3 hover:bg-primary/10 rounded-lg transition-all duration-150 group cursor-pointer text-left"
-                            onClick={() => {
-                              setSearchQuery(search.text);
-                              setSearchFocused(false);
-                            }}
-                          >
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors duration-150">
-                              <Icon className="w-4 h-4 text-primary" />
-                            </div>
-                            <span className="text-sm text-foreground flex-1">{search.text}</span>
-                            <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Section */}
-          <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-            {/* Search (Mobile) */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCommandPaletteOpen(true)}
-              className="md:hidden hover:scale-105 active:scale-95 transition-transform duration-150"
-              aria-label="Search"
-            >
-              <Search className="w-5 h-5" />
-            </Button>
-
-            {/* Language Switcher */}
-            <LanguageSwitcher />
-
-            {/* Notifications */}
-            <NotificationsDropdown />
-
-            {/* Quick Actions */}
-            <QuickActionsDropdown />
-
-            {/* User Menu */}
-            <UserProfileDropdown theme={theme} onCycleTheme={onCycleTheme} />
-          </div>
-        </div>
-
-        {/* Breadcrumb */}
-        <div className="hidden lg:block px-6 py-2 border-t border-border/20 animate-in fade-in-0 slide-in-from-top-1 duration-200">
-          <Breadcrumb />
+  if (!mounted) {
+    return (
+      <header className="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-[#1a1a1a]/60">
+        <div className="flex h-16 items-center px-4 md:px-6">
+          <div className="flex-1" />
         </div>
       </header>
+    );
+  }
 
-      {/* Command Palette */}
-      <CommandPalette 
-        isOpen={commandPaletteOpen} 
-        onClose={() => setCommandPaletteOpen(false)} 
-      />
-    </>
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-[#1a1a1a]/60">
+      <div className="flex h-16 items-center px-4 md:px-6">
+        {/* Search */}
+        <div className="flex-1 flex items-center gap-4">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder={t('common.search')}
+              className="w-full h-9 pl-9 pr-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-[#6366f1] focus:border-transparent transition-all"
+            />
+            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center gap-1 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-mono text-gray-600 dark:text-gray-400">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </div>
+        </div>
+
+        {/* Right Section */}
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Language Switcher */}
+          <LanguageSwitcher />
+
+          {/* Theme Toggle */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-9 w-9 px-0">
+                <span className="text-xl">
+                  {theme === 'dark' ? '🌙' : theme === 'light' ? '☀️' : '💻'}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setTheme('light')}>
+                ☀️ {t('settings.lightMode')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('dark')}>
+                🌙 {t('settings.darkMode')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('system')}>
+                💻 {t('settings.systemMode')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Notifications */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-9 w-9 px-0 relative">
+                <Bell className="h-5 w-5" />
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                >
+                  3
+                </Badge>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuLabel>{t('notifications.title')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="max-h-96 overflow-y-auto">
+                <DropdownMenuItem>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-medium">New user registered</p>
+                    <p className="text-xs text-gray-500">2 minutes ago</p>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-medium">System update available</p>
+                    <p className="text-xs text-gray-500">1 hour ago</p>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-medium">New message received</p>
+                    <p className="text-xs text-gray-500">3 hours ago</p>
+                  </div>
+                </DropdownMenuItem>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* User Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-9 gap-2 px-2">
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src="" alt="User" />
+                  <AvatarFallback className="bg-[#6366f1] text-white text-xs">
+                    JD
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden md:inline-block text-sm">John Doe</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>{t('profile.title')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigation.push('/profile')}>
+                <User className="mr-2 h-4 w-4" />
+                {t('navigation.profile')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigation.push('/dev-docs')}>
+                <FileCode className="mr-2 h-4 w-4" />
+                {t('navigation.devDocs')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigation.push('/settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                {t('navigation.settings')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-600" onClick={() => {
+                console.log('Logging out...');
+                // Add logout logic here
+              }}>
+                <LogOut className="mr-2 h-4 w-4" />
+                {t('navigation.logout')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </header>
   );
-};
+}

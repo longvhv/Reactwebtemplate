@@ -2,61 +2,20 @@
 
 Modern, scalable React application framework with modular architecture, TypeScript, and Tailwind CSS.
 
-## 🌟 **100% React Native Ready - CERTIFIED!** ✅
-
-Ứng dụng đã được **certified 100% React Native Ready** sau comprehensive deep audit với **0 violations**:
-
-- ✅ **Web** (React + Vite) - Production Ready
-- ✅ **iOS** (React Native) - Migration Ready
-- ✅ **Android** (React Native) - Migration Ready
-- ✅ **Platform Abstraction** - Complete
-- ✅ **0 Breaking Changes** - Business logic unchanged
-
-**👉 [Deep Audit Report](./docs/DEEP_AUDIT_REPORT.md)** - Complete audit results  
-**📋 [React Native Ready Certification](./docs/REACT_NATIVE_READY.md)** - Certification details  
-**🚀 [Migration Guide](./docs/MIGRATION_TO_REACT_NATIVE.md)** - Step-by-step migration  
-**⚡ [Quick Reference](./docs/PLATFORM_QUICK_REFERENCE.md)** - Developer cheat sheet
-
----
-
 ## 🎯 Features
 
-### Core Features
 - ✅ **Modular Architecture** - Feature-based modules with lazy loading
 - ✅ **TypeScript** - Full type safety throughout the application
 - ✅ **Tailwind CSS** - Utility-first styling with dark mode support
 - ✅ **Shadcn/ui** - Beautiful, accessible component library
-- ✅ **Service Layer** - Centralized API communication
+- ✅ **Repository Pattern** - Abstraction layer for easy data source switching (Golang API / Supabase / Mock)
+- ✅ **Service Layer** - Centralized business logic with validation
 - ✅ **Custom Hooks** - Reusable state management logic
 - ✅ **Performance Optimized** - Code splitting, lazy loading, caching
 - ✅ **Responsive Design** - Mobile-first approach
 - ✅ **Theme Support** - Light/Dark mode with system preference
+- ✅ **i18n Support** - 6 languages (EN, VI, ZH, JA, KO, ES)
 - ✅ **Developer Experience** - Hot reload, TypeScript, ESLint, Prettier
-
-### 🆕 Cross-Platform Features
-- ✅ **Platform Abstraction Layer** - Unified API across web and mobile
-- ✅ **Network Layer** - `platformFetch()` works on all platforms
-- ✅ **Storage Layer** - Abstracted localStorage/AsyncStorage
-- ✅ **Browser API Guards** - All window/document usage protected
-- ✅ **Event Handler Guards** - Proper cleanup on all platforms
-- ✅ **i18n Support** - 6 languages (Vietnamese, English, Spanish, French, Chinese, Japanese, Korean)
-- ✅ **Zero Violations** - 100% React Native compatible code
-
-## 📚 Documentation
-
-### 🆕 React Native Ready Documentation
-- **[🎯 Deep Audit Report](./docs/DEEP_AUDIT_REPORT.md)** - Complete audit with 23 fixes ⭐ **MUST READ**
-- **[✅ React Native Ready Certification](./docs/REACT_NATIVE_READY.md)** - Certification and best practices
-- **[🚀 Migration Guide](./docs/MIGRATION_TO_REACT_NATIVE.md)** - Step-by-step migration (3-4 weeks)
-- **[⚡ Quick Reference](./docs/PLATFORM_QUICK_REFERENCE.md)** - Developer cheat sheet
-- **[🔧 Platform Architecture](./docs/PLATFORM-ARCHITECTURE.md)** - Technical architecture details
-
-### General Documentation
-- **[Architecture Guide](./ARCHITECTURE.md)** - System architecture and design patterns
-- **[Development Guide](./DEVELOPMENT-GUIDE.md)** - Step-by-step development instructions
-- **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute to the project
-- **[Code Structure](./CODE_STRUCTURE.md)** - Detailed code organization
-- **[i18n Guide](./I18N-GUIDE.md)** - Internationalization documentation
 
 ## 📁 Project Structure
 
@@ -97,41 +56,55 @@ npm run build
 
 ### Creating Your First Feature
 
-1. **Create a new page:**
+⚠️ **IMPORTANT:** All new pages MUST follow the [Pages Convention](./PAGES_CONVENTION.md)
+
+1. **Create page in `/app/` (Code chính):**
 
 ```typescript
-// pages/MyPage.tsx
-export function MyPage() {
+// /app/(dashboard)/my-page/page.tsx
+'use client';
+
+export default function MyPage() {
   return <div>My Page Content</div>;
 }
 ```
 
-2. **Create a module:**
+2. **Create shim in `/pages/` (Re-export only):**
 
 ```typescript
-// modules/mypage/index.tsx
-import { lazy } from 'react';
-import { FileText } from 'lucide-react';
-
-export const MyPageModule = {
-  id: 'mypage',
-  name: 'My Page',
-  route: '/mypage',
-  icon: FileText,
-  component: lazy(() => import('../../pages/MyPage').then(m => ({ 
-    default: m.MyPage 
-  }))),
-};
+// /pages/MyPage.tsx
+/**
+ * My Page - Re-export
+ * Code chính ở /app/(dashboard)/my-page/page.tsx
+ */
+export { default as MyPage } from '@/app/(dashboard)/my-page/page';
 ```
 
-3. **Register the module:**
+3. **Add route in App.tsx:**
 
 ```typescript
 // App.tsx
-import { MyPageModule } from './modules/mypage';
+import MyPage from './app/(dashboard)/my-page/page';
 
-registry.register(MyPageModule);
+// In <Routes>:
+<Route path="/my-page" element={<MyPage />} />
 ```
+
+**📖 See [PAGES_CONVENTION.md](./PAGES_CONVENTION.md) for detailed guidelines.**
+
+## 📚 Documentation
+
+- **[Quick Start - New Pages](./QUICK_START_PAGES.md)** - 🚀 1-minute guide to create pages correctly
+- **[Data Source Quick Reference](./DATA_SOURCE_QUICK_REFERENCE.md)** - 🔄 Quick guide to data source configuration
+- **[Pages Convention](./PAGES_CONVENTION.md)** - 🔒 **MANDATORY** - Next.js shim pattern for all new pages
+- **[Architecture Guide](./ARCHITECTURE.md)** - System architecture and design patterns
+- **[Development Guide](./DEVELOPMENT-GUIDE.md)** - Step-by-step development instructions
+- **[Data Source Migration](./docs/migration/DATA_SOURCE_MIGRATION.md)** - Complete guide to switching data sources
+- **[App/Pages Refactor Plan](./APP_PAGES_REFACTOR_PLAN.md)** - Refactor progress and guidelines
+- **[Convention Enforcement](./CONVENTION_ENFORCEMENT.md)** - Rules and compliance tracking
+- **[Changelog](./CHANGELOG.md)** - Version history and changes
+- **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute to the project
+- **[Code Structure](./CODE_STRUCTURE.md)** - Detailed code organization
 
 ## 🏗️ Architecture Highlights
 

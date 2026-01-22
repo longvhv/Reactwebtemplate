@@ -4,8 +4,6 @@
  * Giảm kích thước data khi transfer và storage
  */
 
-import { platformFetch } from '../platform/network/fetch';
-
 /**
  * Compress string using built-in compression
  * Supports both browser (CompressionStream) and fallback (LZ-string like)
@@ -148,15 +146,8 @@ export function decompressFromBase64(base64: string): string {
 /**
  * Compress data for localStorage
  * Automatically compresses if data is large
- * 
- * NOTE: Web-only utility. Returns early in non-browser environments.
  */
 export function compressForStorage(key: string, data: any): void {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-    console.warn('compressForStorage: localStorage not available');
-    return;
-  }
-  
   const json = JSON.stringify(data);
   
   // Only compress if data is larger than 1KB
@@ -171,15 +162,8 @@ export function compressForStorage(key: string, data: any): void {
 /**
  * Decompress data from localStorage
  * Automatically detects if data is compressed
- * 
- * NOTE: Web-only utility. Returns null in non-browser environments.
  */
 export function decompressFromStorage(key: string): any {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-    console.warn('decompressFromStorage: localStorage not available');
-    return null;
-  }
-  
   const stored = localStorage.getItem(key);
   if (!stored) return null;
   
@@ -194,17 +178,8 @@ export function decompressFromStorage(key: string): any {
 
 /**
  * Calculate compression ratio
- * Web-only utility (uses Blob)
  */
 export function getCompressionRatio(original: string, compressed: string): number {
-  // ✅ Guard for React Native - Blob is web-only
-  if (typeof Blob === 'undefined') {
-    // Fallback: calculate based on string length
-    const originalSize = new TextEncoder().encode(original).length;
-    const compressedSize = new TextEncoder().encode(compressed).length;
-    return ((1 - compressedSize / originalSize) * 100).toFixed(2) as any;
-  }
-  
   const originalSize = new Blob([original]).size;
   const compressedSize = new Blob([compressed]).size;
   return ((1 - compressedSize / originalSize) * 100).toFixed(2) as any;
@@ -230,7 +205,7 @@ export async function fetchWithCompression(
   const headers = new Headers(options?.headers);
   headers.set('Accept-Encoding', 'gzip, deflate, br');
   
-  return platformFetch(url, {
+  return fetch(url, {
     ...options,
     headers,
   });
@@ -238,22 +213,16 @@ export async function fetchWithCompression(
 
 /**
  * Compress large request bodies
- * Web-only utility (uses Blob and CompressionStream)
  */
 export async function compressRequestBody(body: any): Promise<Blob> {
   const json = JSON.stringify(body);
-  
-  // ✅ Guard for React Native - Blob is web-only
-  if (typeof Blob === 'undefined') {
-    throw new Error('Blob is not supported in this environment. Use platform-specific compression.');
-  }
   
   // Only compress if body is larger than 5KB
   if (json.length < 5120) {
     return new Blob([json], { type: 'application/json' });
   }
   
-  if (typeof window !== 'undefined' && 'CompressionStream' in window) {
+  if ('CompressionStream' in window) {
     const stream = new Response(json).body!.pipeThrough(
       new CompressionStream('gzip')
     );

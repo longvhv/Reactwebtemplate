@@ -6,6 +6,7 @@ import { Label } from "../../components/ui/label";
 import { Switch } from "../../components/ui/switch";
 import { Breadcrumb } from "../../components/Breadcrumb";
 import { useTheme } from "../../providers/ThemeProvider";
+import { useTranslation } from "react-i18next";
 import { Save, User, Bell, Shield, Palette, Check } from "lucide-react";
 
 /**
@@ -14,6 +15,7 @@ import { Save, User, Bell, Shield, Palette, Check } from "lucide-react";
  * Elegant settings với smooth animations và glassmorphism
  */
 export function SettingsPage() {
+  const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const [name, setName] = useState("Nguyễn Văn A");
   const [email, setEmail] = useState("user@example.com");
@@ -33,14 +35,14 @@ export function SettingsPage() {
   const sections = [
     {
       id: "profile",
-      title: "Thông tin cá nhân",
-      description: "Quản lý thông tin tài khoản của bạn",
+      title: t('profile.personalInfo'),
+      description: t('profile.manageProfileDescription'),
       icon: User,
       color: "from-blue-500 to-blue-600",
       content: (
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="name">Họ và tên</Label>
+            <Label htmlFor="name">{t('profile.name')}</Label>
             <Input
               id="name"
               value={name}
@@ -49,7 +51,7 @@ export function SettingsPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('profile.email')}</Label>
             <Input
               id="email"
               type="email"
@@ -59,7 +61,7 @@ export function SettingsPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Số điện thoại</Label>
+            <Label htmlFor="phone">{t('profile.phone')}</Label>
             <Input
               id="phone"
               type="tel"

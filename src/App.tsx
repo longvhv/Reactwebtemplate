@@ -1,22 +1,30 @@
-import { useEffect, memo, lazy, Suspense } from "react";
-import { Router } from "./platform/navigation/Router";
+import { useState, useEffect, Suspense } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { LanguageProvider } from "./providers/LanguageProvider";
 import { ModuleRegistry } from "./core/ModuleRegistry";
 import { AppLayout } from "./components/layout/AppLayout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { LoadingFallback } from "./components/LoadingFallback";
+import { PerformanceMonitor } from "./components/PerformanceMonitor";
 import { preloadCriticalResources, setupIntelligentPrefetch } from "./utils/preload";
 import { initPerformanceMonitoring } from "./utils/performanceMonitoring";
-import { logger } from "./utils/logger";
 import { DashboardModule } from "./modules/dashboard";
 import { AuthModule } from "./modules/auth";
 import { SettingsModule } from "./modules/settings";
 import { UserModule } from "./modules/user";
 
-// Lazy load dev-only component for better performance
-const PerformanceMonitor = lazy(() => 
-  import("./components/PerformanceMonitor").then(m => ({ default: m.PerformanceMonitor }))
-);
+// Initialize i18n
+import './i18n/config';
+
+// Import page components
+import DashboardPage from "./app/(dashboard)/dashboard/page";
+import UsersPage from "./app/(dashboard)/users/page";
+import SettingsPage from "./app/(dashboard)/settings/page";
+import ProfilePage from "./app/(dashboard)/profile/page";
+import HelpPage from "./app/(dashboard)/help/page";
+import DevDocsPage from "./app/(dashboard)/dev-docs/page";
+import BusinessFlowDetailPage from "./app/(dashboard)/business-flow/[flowId]/page";
 
 /**
  * Register modules immediately (before render)
@@ -35,7 +43,7 @@ if (typeof performance !== "undefined") {
 }
 
 // Register modules synchronously
-logger.log("Registering modules...");
+console.log("Registering modules...");
 registry.register(DashboardModule);
 registry.register(AuthModule);
 registry.register(SettingsModule);
@@ -54,7 +62,7 @@ if (typeof performance !== "undefined") {
   }
 }
 
-logger.success(`Registered ${registry.getAllModules().length} modules`);
+console.log(`✅ Registered ${registry.getAllModules().length} modules`);
 
 /**
  * VHV Platform React Framework
@@ -69,7 +77,7 @@ logger.success(`Registered ${registry.getAllModules().length} modules`);
  * - Intelligent prefetching
  * - Real-time performance monitoring
  */
-const AppContent = memo(function AppContent() {
+function AppContent() {
   useEffect(() => {
     // Initialize performance monitoring
     initPerformanceMonitoring();
@@ -84,26 +92,38 @@ const AppContent = memo(function AppContent() {
   }, []);
 
   return (
-    <>
-      <AppLayout />
-      {/* Performance Monitor - Development only with lazy loading */}
-      {process.env.NODE_ENV === "development" && (
-        <Suspense fallback={null}>
-          <PerformanceMonitor />
-        </Suspense>
-      )}
-    </>
+    <AppLayout>
+      <Routes>
+        {/* Default redirect to dashboard */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        
+        {/* Dashboard routes */}
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/users" element={<UsersPage />} />
+        <Route path="/dev-docs" element={<DevDocsPage />} />
+        <Route path="/business-flow/:flowId" element={<BusinessFlowDetailPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/help" element={<HelpPage />} />
+        
+        {/* Catch-all route - redirect to dashboard */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+      
+      {/* Performance Monitor - Development only */}
+      {process.env.NODE_ENV === "development" && <PerformanceMonitor />}
+    </AppLayout>
   );
-});
+}
 
 export default function App() {
   return (
     <ErrorBoundary>
       <LanguageProvider>
         <ThemeProvider>
-          <Router>
+          <BrowserRouter>
             <AppContent />
-          </Router>
+          </BrowserRouter>
         </ThemeProvider>
       </LanguageProvider>
     </ErrorBoundary>

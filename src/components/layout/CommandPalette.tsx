@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Search, X, Command, BarChart, User, Settings, FileText, HelpCircle, Zap, ArrowRight, Clock } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { useTranslation } from "../../providers/LanguageProvider";
-import { useNavigate } from "../../platform/navigation/Router"; // Add platform navigation
+import { useTranslation } from "react-i18next";
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -28,35 +27,34 @@ export const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { t } = useTranslation();
-  const navigate = useNavigate(); // Use platform navigation
 
   // Mock commands - In production, this would be dynamic
   const allCommands: Command[] = [
     {
       id: "dashboard",
-      title: t.navigation.dashboard,
-      subtitle: t.dashboard.overview,
+      title: t('navigation.dashboard'),
+      subtitle: t('dashboard.overview'),
       icon: BarChart,
       category: "Navigation",
-      action: () => { navigate("/"); onClose(); }, // Use navigate instead of window.location.href
+      action: () => window.location.href = "/",
       keywords: ["home", "dashboard", "overview"],
     },
     {
       id: "profile",
-      title: t.navigation.profile,
-      subtitle: t.profile.personalInfo,
+      title: t('navigation.profile'),
+      subtitle: t('profile.personalInfo'),
       icon: User,
       category: "Navigation",
-      action: () => { navigate("/profile"); onClose(); }, // Use navigate instead of window.location.href
+      action: () => window.location.href = "/profile",
       keywords: ["profile", "user", "account"],
     },
     {
       id: "settings",
-      title: t.navigation.settings,
-      subtitle: t.settings.general,
+      title: t('navigation.settings'),
+      subtitle: t('settings.general'),
       icon: Settings,
       category: "Navigation",
-      action: () => { navigate("/settings"); onClose(); }, // Use navigate instead of window.location.href
+      action: () => window.location.href = "/settings",
       keywords: ["settings", "preferences", "config"],
     },
   ];
@@ -70,25 +68,19 @@ export const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
       )
     : recentCommands;
 
-  // Handle keyboard navigation
+  // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
-    if (typeof window === 'undefined') return; // ✅ Guard for React Native compatibility
-    
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        e.preventDefault();
         onClose();
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedIndex(prev => 
-          prev < filteredCommands.length - 1 ? prev + 1 : 0
-        );
+        setSelectedIndex(prev => (prev + 1) % filteredCommands.length);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setSelectedIndex(prev => 
-          prev > 0 ? prev - 1 : filteredCommands.length - 1
-        );
+        setSelectedIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
       } else if (e.key === "Enter" && filteredCommands[selectedIndex]) {
         e.preventDefault();
         filteredCommands[selectedIndex].action();

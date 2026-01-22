@@ -1,5 +1,6 @@
 import { useState, memo, useEffect } from "react";
-import { NavLink, useLocation } from "../../platform/navigation/Router"; // ✅ Use platform abstraction (fixed path)
+import { useLocation } from "@/shims/router";
+import { Link } from "@/shims/router";
 import { ChevronRight, ChevronDown, Circle } from "lucide-react";
 import { MenuItem } from "../../core/ModuleRegistry";
 import { Tooltip } from "../ui/Tooltip";
@@ -45,7 +46,6 @@ export const NestedMenuItem = memo(({ item, level, collapsed, onClose, searchQue
   const storageKey = `menu-expanded-${item.id}`;
   const getInitialExpanded = () => {
     if (hasActiveChild) return true; // Auto-expand if contains active route
-    if (typeof localStorage === 'undefined') return false;
     const stored = localStorage.getItem(storageKey);
     return stored ? JSON.parse(stored) : false;
   };
@@ -54,7 +54,6 @@ export const NestedMenuItem = memo(({ item, level, collapsed, onClose, searchQue
 
   // Save expand state to localStorage
   useEffect(() => {
-    if (typeof localStorage === 'undefined') return;
     if (hasChildren) {
       localStorage.setItem(storageKey, JSON.stringify(isExpanded));
     }
@@ -148,10 +147,10 @@ export const NestedMenuItem = memo(({ item, level, collapsed, onClose, searchQue
     ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}
   `;
 
-  // Render as NavLink if has path, otherwise as button
+  // Render as Link if has path, otherwise as button
   const element = item.path && !hasChildren ? (
-    <NavLink
-      to={item.path}
+    <Link
+      href={item.path}
       onClick={handleClick}
       className={baseClasses}
     >
@@ -168,7 +167,7 @@ export const NestedMenuItem = memo(({ item, level, collapsed, onClose, searchQue
       <div className="relative z-10 flex items-center gap-3 w-full">
         {content}
       </div>
-    </NavLink>
+    </Link>
   ) : (
     <button
       onClick={handleClick}

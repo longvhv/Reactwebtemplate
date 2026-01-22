@@ -10,8 +10,6 @@ import { WebVitalsMetric } from "../hooks/useWebVitals";
  * Displays real-time performance metrics
  * Only visible in development mode
  * Gracefully handles missing web-vitals library
- * 
- * @updated 2026-01-02 - Fixed hook violations
  */
 export function PerformanceMonitor() {
   const [isVisible, setIsVisible] = useState(false);
@@ -22,13 +20,13 @@ export function PerformanceMonitor() {
   const [hasWebVitals, setHasWebVitals] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if web-vitals is available and setup monitoring
+  // Only show in development
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") {
-      setIsLoading(false);
       return;
     }
 
+    // Check if web-vitals is available
     const checkWebVitals = async () => {
       try {
         const webVitals = await import("web-vitals");
@@ -73,30 +71,18 @@ export function PerformanceMonitor() {
     };
 
     checkWebVitals();
-  }, []);
 
-  // Load saved visibility state from localStorage
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
-    if (typeof localStorage === 'undefined') return;
-    
+    // Check localStorage for saved visibility state
     const saved = localStorage.getItem("perf-monitor-visible");
     setIsVisible(saved === "true");
-  }, []);
 
-  // Toggle visibility with Ctrl+Shift+P
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
-    if (typeof window === 'undefined') return; // ✅ Guard for React Native compatibility
-    
+    // Keyboard shortcut: Ctrl+Shift+P
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === "P") {
         e.preventDefault();
-        setIsVisible(prev => {
+        setIsVisible((prev) => {
           const newValue = !prev;
-          if (typeof localStorage !== 'undefined') {
-            localStorage.setItem("perf-monitor-visible", String(newValue));
-          }
+          localStorage.setItem("perf-monitor-visible", String(newValue));
           return newValue;
         });
       }
@@ -106,10 +92,17 @@ export function PerformanceMonitor() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, []);
 
-  // Handle dragging
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y,
+    });
+  };
+
   useEffect(() => {
     if (!isDragging) return;
-    if (typeof window === 'undefined') return; // ✅ Guard for React Native compatibility
 
     const handleMouseMove = (e: MouseEvent) => {
       setPosition({
@@ -131,14 +124,9 @@ export function PerformanceMonitor() {
     };
   }, [isDragging, dragStart]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest("button")) return;
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    });
-  };
+  if (process.env.NODE_ENV !== "development" || !isVisible || isLoading) {
+    return null;
+  }
 
   const getMetricIcon = (name: string) => {
     switch (name) {
@@ -177,11 +165,6 @@ export function PerformanceMonitor() {
     return `${Math.round(metric.value)}ms`;
   };
 
-  // Don't render in production or when not visible or still loading
-  if (process.env.NODE_ENV !== "development" || !isVisible || isLoading) {
-    return null;
-  }
-
   return (
     <div
       className="fixed z-[9999] select-none"
@@ -204,9 +187,7 @@ export function PerformanceMonitor() {
             className="h-6 w-6 p-0"
             onClick={() => {
               setIsVisible(false);
-              if (typeof localStorage !== 'undefined') {
-                localStorage.setItem("perf-monitor-visible", "false");
-              }
+              localStorage.setItem("perf-monitor-visible", "false");
             }}
           >
             <X className="w-4 h-4" />

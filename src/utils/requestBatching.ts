@@ -4,8 +4,6 @@
  * Kết hợp nhiều requests thành một để giảm network overhead
  */
 
-import { platformFetch } from '../platform/network/fetch';
-
 type BatchRequest = {
   id: string;
   url: string;
@@ -77,7 +75,7 @@ class RequestBatcher {
     
     // Execute all requests in parallel
     const promises = batch.map(req => 
-      platformFetch(req.url, req.options)
+      fetch(req.url, req.options)
         .then(async response => {
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -196,7 +194,7 @@ class GraphQLBatcher {
         variables: item.variables,
       }));
       
-      const response = await platformFetch(this.endpoint, {
+      const response = await fetch(this.endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
